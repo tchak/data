@@ -521,3 +521,130 @@ test("when a record depends on another record, we can delete the first record an
   equal(get(parentComment, 'isDirty'), false, "parent comment has been saved");
   ok(true, "no exception was thrown");
 });
+
+test("unload new record", function() {
+  var tryToFind;
+
+  store = DS.Store.create({
+    adapter: DS.Adapter.create({
+      find: function() {
+        tryToFind = true;
+      }
+    })
+  });
+
+  var ChildRecord = DS.Model.extend({
+    parent: DS.belongsTo('Record')
+  });
+
+  var Record = DS.Model.extend({
+    title: DS.attr('string'),
+    children: DS.hasMany(ChildRecord)
+  });
+
+  var record = store.createRecord(Record, {id: 1, title: 'toto'});
+  var childRecord = store.createRecord(ChildRecord, {id: 1});
+  record.get('children').pushObject(childRecord);
+
+  equal(get(record, 'isNew'), true, "record is new");
+  equal(get(record, 'isDirty'), true, "record is dirty");
+  equal(get(childRecord, 'isDirty'), true, "child record is dirty");
+
+  record = store.find(Record, 1);
+  equal(get(record, 'id'), 1, "found record with id 1");
+
+  store.unloadRecord(record);
+
+  equal(get(record, 'isDirty'), false, "record is not dirty");
+  equal(get(record, 'isDeleted'), true, "record is deleted");
+
+  tryToFind = false;
+  store.find(Record, 1);
+  equal(tryToFind, true, "not found record with id 1");
+});
+
+test("unload loaded record", function() {
+  var tryToFind;
+
+  store = DS.Store.create({
+    adapter: DS.Adapter.create({
+      find: function() {
+        tryToFind = true;
+      }
+    })
+  });
+
+  var Record = DS.Model.extend({
+    title: DS.attr('string')
+  });
+
+  store.load(Record, {id: 1, title: 'toto'});
+  var record = store.find(Record, 1);
+
+  equal(get(record, 'isNew'), false, "record is not new");
+
+  store.unloadRecord(record);
+
+  equal(get(record, 'isDirty'), false, "record is not dirty");
+  equal(get(record, 'isDeleted'), true, "record is deleted");
+
+  tryToFind = false;
+  store.find(Record, 1);
+  equal(tryToFind, true, "not found record with id 1");
+});
+
+test("unload child record", function() {
+  var tryToFind, id = 0;
+
+  store = DS.Store.create({
+    adapter: DS.Adapter.create({
+      find: Ember.K,
+      createRecord: function(store, type, record) {
+        var hash = record.toJSON();
+        hash.id = ++id;
+        store.didCreateRecord(record, hash);
+      }
+    })
+  });
+
+  var ChildRecord = DS.Model.extend({
+    parent: DS.belongsTo('Record')
+  });
+
+  var Record = DS.Model.extend({
+    title: DS.attr('string'),
+    children: DS.hasMany(ChildRecord)
+  });
+
+  store.load(Record, {id: 1, title: 'toto', children: [1]});
+  store.load(ChildRecord, {id: 1, parent: 1});
+
+  var records = store.findAll(ChildRecord);
+
+  var record = store.find(Record, 1);
+  var childRecord = record.get('children').objectAt(0);
+
+  equal(record.getPath('children.length'), 1, 'has one child');
+  equal(records.get('length'), 1, 'found one record');
+
+  var childRecord2 = store.createRecord(ChildRecord, {});
+  record.get('children').pushObject(childRecord2);
+
+  equal(record.getPath('children.length'), 2, 'has two children');
+  equal(records.get('length'), 2, 'found two records');
+
+  store.unloadRecord(childRecord);
+
+  equal(record.getPath('children.length'), 1, "record has one child");
+  equal(records.get('length'), 1, 'found one record');
+
+  equal(get(childRecord, 'isDirty'), false, "record is not dirty");
+  equal(get(childRecord, 'isDeleted'), true, "record is deleted");
+
+  equal(get(record, 'isDirty'), false, "record is not dirty");
+
+  //childRecord2.unloadRecord();
+
+  //equal(record.getPath('children.length'), 0, "record has no more children");
+  //equal(records.get('length'), 0, 'found no records');
+});

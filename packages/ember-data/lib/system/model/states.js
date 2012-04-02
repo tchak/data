@@ -828,11 +828,20 @@ var states = {
 
       // Once the adapter indicates that the deletion has
       // been saved, the record enters the `saved` substate
-      // of `deleted`.
+      // of `deleted` and unload the record.
       saved: DS.State.create({
         // FLAGS
         isDirty: false,
 
+        // TRANSITIONS
+        enter: function(manager) {
+          var record = get(manager, 'record'),
+              store = get(record, 'store');
+
+          store.unregisterRecord(record);
+        },
+
+        // EVENTS
         invokeLifecycleCallbacks: function(manager) {
           var record = get(manager, 'record');
           record.fire('didDelete', record);
