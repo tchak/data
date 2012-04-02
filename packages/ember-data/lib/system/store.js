@@ -849,6 +849,27 @@ DS.Store = Ember.Object.extend({
     return record;
   },
 
+  unloadRecord: function(record) {
+    if (!get(record, 'isDeleted')) {
+      record.send('deleteRecord');
+    }
+
+    if (get(record, 'isDirty')) {
+      record.send('willCommit');
+      record.send('didCommit');
+    }
+  },
+
+  unregisterRecord: function(record) {
+    var type = record.constructor,
+        id = get(record, 'id'),
+        clientId = get(record, 'clientId'),
+        typeMap = this.typeMapFor(type);
+
+    if (id) { delete typeMap.idToCid[id]; }
+    delete typeMap.cidToHash[clientId];
+  },
+
   destroy: function() {
     if (get(DS, 'defaultStore') === this) {
       set(DS, 'defaultStore', null);
