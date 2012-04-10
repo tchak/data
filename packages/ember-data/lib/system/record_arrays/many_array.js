@@ -38,15 +38,15 @@ DS.ManyArray = DS.RecordArray.extend({
     added = added.map(function(record) {
       Ember.assert("You can only add records of " + (get(this, 'type') && get(this, 'type').toString()) + " to this association.", !get(this, 'type') || (get(this, 'type') === record.constructor));
 
+      var inverseAssociation = this.assignInverse(record, parentRecord);
+
       // If the record to which this many array belongs does not yet
       // have an id, notify the newly-added record that it must wait
       // for the parent to receive an id before the child can be
       // saved.
-      if (pendingParent) {
+      if (inverseAssociation && pendingParent) {
         record.send('waitingOn', parentRecord);
       }
-
-      this.assignInverse(record, parentRecord);
 
       stateManager.send('recordWasAdded', record);
 
@@ -74,6 +74,12 @@ DS.ManyArray = DS.RecordArray.extend({
     this._super(index, removed, added);
   },
 
+  /**
+    Finds the belongsTo association of record for parentRecord and, if such an
+    association exists, assigns parentRecord to it.
+
+    Returns the association found, or undefined if no such association exists.
+  */
   assignInverse: function(record, parentRecord, remove) {
     var associationMap = get(record.constructor, 'associations'),
         possibleAssociations = associationMap.get(parentRecord.constructor),
@@ -92,6 +98,7 @@ DS.ManyArray = DS.RecordArray.extend({
 
     if (actual) {
       set(record, actual.name, remove ? null : parentRecord);
+      return actual;
     }
   },
 
