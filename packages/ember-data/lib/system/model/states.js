@@ -156,7 +156,7 @@ var stateProperty = Ember.computed(function(key) {
   if (parent) {
     return get(parent, key);
   }
-}).property();
+}).property().cacheable(false);
 
 var isEmptyObject = function(object) {
   for (var name in object) {

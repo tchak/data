@@ -36,7 +36,7 @@ DS.Model = Ember.Object.extend(Ember.Evented, {
     }
 
     return data && get(data, primaryKey);
-  }).property('primaryKey', 'data'),
+  }).property('primaryKey', 'data').cacheable(),
 
   // The following methods are callbacks invoked by `toJSON`. You
   // can override one of the callbacks to override specific behavior,
