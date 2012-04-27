@@ -289,7 +289,11 @@ DS.Store = Ember.Object.extend({
     }
 
     if (query !== undefined) {
-      return this.findMany(type, id, query);
+      if (Ember.isArray(id)) {
+        return this.findMany(type, id, query);
+      } else {
+        return this.findQuery(type, query, id);
+      }
     } else if (Ember.typeOf(id) === 'object') {
       return this.findQuery(type, id);
     }
@@ -418,10 +422,26 @@ DS.Store = Ember.Object.extend({
     return this.createManyArray(type, clientIds);
   },
 
-  findQuery: function(type, query) {
-    var array = DS.AdapterPopulatedRecordArray.create({ type: type, content: Ember.A([]), store: this });
-    var adapter = get(this, '_adapter');
-    if (adapter && adapter.findQuery) { adapter.findQuery(this, type, query, array); }
+  findQuery: function(type, query, array) {
+    array = array || DS.AdapterPopulatedRecordArray.create({ type: type, content: Ember.A([]), store: this });
+
+    var adapter = get(this, '_adapter'), id, clientId;
+    if (adapter && adapter.findQuery) {
+      if (array instanceof DS.AdapterPopulatedRecordArray) {
+        adapter.findQuery(this, type, query, array, id);
+      } else {
+        id = array;
+        clientId = this.typeMapFor(type).idToCid[id];
+        if (clientId) {
+          this.findByClientId(type, clientId, id).send('willLoad');
+        }
+        if (Ember.typeOf(query) === 'object') {
+          adapter.findQuery(this, type, query, id);
+        } else {
+          adapter.find(this, type, id);
+        }
+      }
+    }
     else { throw fmt("Adapter is either null or does not implement `findQuery` method", this); }
     return array;
   },
