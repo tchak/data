@@ -236,6 +236,11 @@ DS.Model = Ember.Object.extend(Ember.Evented, {
     this.send('deleteRecord');
   },
 
+  refresh: function(query) {
+    query = query || true;
+    get(this, 'store').find(this.constructor, get(this, 'id'), query);
+  },
+
   waitingOn: function(record) {
     this.send('waitingOn', record);
   },

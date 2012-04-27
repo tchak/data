@@ -721,6 +721,10 @@ var states = {
           } else {
             record.fire('didUpdate', record);
           }
+        },
+
+        willLoad: function(manager) {
+          manager.goToState('loading');
         }
       }),
 
