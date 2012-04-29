@@ -589,3 +589,23 @@ test("an ID of 0 is allowed", function() {
   store.load(Person, { id: 0, name: "Tom Dale" });
   equal(store.findAll(Person).objectAt(0).get('name'), "Tom Dale", "found record with id 0");
 });
+
+test("we can load partial updates", function() {
+  var store = DS.Store.create();
+
+  var Person = DS.Model.extend({
+    firstName: DS.attr('string'),
+    lastName: DS.attr('string')
+  });
+
+  store.load(Person, { id: 1, first_name: "Tom", last_name: "Dale" });
+  var person = store.findAll(Person).objectAt(0);
+
+  equal(person.get('firstName'), "Tom", "firstName is Tom");
+  equal(person.get('lastName'), "Dale", "lastName is Dale");
+
+  store.load(Person, { id: 1, last_name: "Bro" }, true);
+
+  equal(person.get('firstName'), "Tom", "firstName is steel Tom");
+  equal(person.get('lastName'), "Bro", "lastName is now Bro");
+});

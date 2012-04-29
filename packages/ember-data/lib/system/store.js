@@ -507,10 +507,10 @@ DS.Store = Ember.Object.extend({
     defaultTransaction.commit();
   },
 
-  didUpdateRecords: function(array, hashes) {
+  didUpdateRecords: function(array, hashes, merge) {
     if (hashes) {
       array.forEach(function(record, idx) {
-        this.didUpdateRecord(record, hashes[idx]);
+        this.didUpdateRecord(record, hashes[idx], merge);
       }, this);
     } else {
       array.forEach(function(record) {
@@ -519,12 +519,12 @@ DS.Store = Ember.Object.extend({
     }
   },
 
-  didUpdateRecord: function(record, hash) {
+  didUpdateRecord: function(record, hash, merge) {
     if (hash) {
       var clientId = get(record, 'clientId'),
           dataCache = this.typeMapFor(record.constructor).cidToHash;
 
-      dataCache[clientId] = hash;
+      this.mergeDataCache(dataCache, clientId, hash, merge);
       record.send('didChangeData');
       record.hashWasUpdated();
     } else {
@@ -754,6 +754,14 @@ DS.Store = Ember.Object.extend({
   // . LOADING DATA .
   // ................
 
+  mergeDataCache: function(dataCache, clientId, hash, merge) {
+    if (merge) {
+      dataCache[clientId] = Ember.$.extend(true, {}, dataCache[clientId], hash);
+    } else {
+      dataCache[clientId] = hash;
+    }
+  },
+
   /**
     Load a new data hash into the store for a given id and type combination.
     If data for that record had been loaded previously, the new information
@@ -766,7 +774,11 @@ DS.Store = Ember.Object.extend({
     @param {String|Number} id
     @param {Object} hash the data hash to load
   */
-  load: function(type, id, hash) {
+  load: function(type, id, hash, merge) {
+    if (typeof hash === 'boolean') {
+      merge = hash;
+      hash = undefined;
+    }
     if (hash === undefined) {
       hash = id;
       var primaryKey = type.proto().primaryKey;
@@ -780,7 +792,7 @@ DS.Store = Ember.Object.extend({
         recordCache = get(this, 'recordCache');
 
     if (clientId !== undefined) {
-      dataCache[clientId] = hash;
+      this.mergeDataCache(dataCache, clientId, hash, merge);
 
       var record = recordCache[clientId];
       if (record) {
@@ -796,8 +808,13 @@ DS.Store = Ember.Object.extend({
     return { id: id, clientId: clientId };
   },
 
-  loadMany: function(type, ids, hashes) {
+  loadMany: function(type, ids, hashes, merge) {
     var clientIds = Ember.A([]);
+
+    if (typeof hashes === 'boolean') {
+      merge = hashes;
+      hashes = undefined;
+    }
 
     if (hashes === undefined) {
       hashes = ids;
@@ -810,7 +827,7 @@ DS.Store = Ember.Object.extend({
     }
 
     for (var i=0, l=get(ids, 'length'); i<l; i++) {
-      var loaded = this.load(type, ids[i], hashes[i]);
+      var loaded = this.load(type, ids[i], hashes[i], merge);
       clientIds.pushObject(loaded.clientId);
     }
 
