@@ -27,7 +27,7 @@ var hasAssociation = function(type, options, one) {
     }
 
     if (arguments.length === 2) {
-      key = options.key || get(this, 'namingConvention').foreignKey(key);
+      key = meta.options.key || get(this, 'namingConvention').foreignKey(key);
       this.send('setAssociation', { key: key, value: value === null ? null : get(value, 'clientId') });
       //data.setAssociation(key, get(value, 'clientId'));
       // put the client id in `key` in the data hash

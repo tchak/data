@@ -309,6 +309,7 @@ DS.Model = Ember.Object.extend(Ember.Evented, {
           });
 
           var clientIds = [];
+
           if (association.options.embedded) {
             clientIds = store.loadMany(association.type, ids).clientIds;
           } else {
@@ -330,6 +331,7 @@ DS.Model = Ember.Object.extend(Ember.Evented, {
           });
         }
       }
+
     }, this);
   }, 'data'),
 

@@ -707,3 +707,26 @@ test("can rollback after sucessives updates", function() {
   equal(person.get('isDirty'), false, "person is not dirty");
   equal(person.get('name'), "Paul Bro", "person changed the name back to Paul Bro");
 });
+
+test("can update hasMany associations with naming convention", function() {
+
+  var Project = DS.Model.extend({
+    superBros: DS.hasMany(Person),
+    bros: DS.hasMany(Person)
+  });
+
+  store.load(Person, { id: 1, name: "Braaaahm Dale" });
+  store.load(Person, { id: 2, name: "Brohuda Katz" });
+  store.load(Person, { id: 3, name: "Paul Chavard" });
+  store.load(Project, { id: 1, super_bros: [1, 2], bros: [1, 2] });
+
+  var project = store.find(Project, 1);
+
+  equal(getPath(project, 'bros.length'), 2, "has 2 bros");
+  equal(getPath(project, 'superBros.length'), 2, "has 2 super bros");
+
+  store.load(Project, { id: 1, super_bros: [1, 2, 3], bros: [1, 2, 3] });
+
+  equal(getPath(project, 'bros.length'), 3, "has 3 bros");
+  equal(getPath(project, 'superBros.length'), 3, "has 3 super bros");
+});
