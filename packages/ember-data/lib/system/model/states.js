@@ -366,6 +366,7 @@ var DirtyState = DS.State.extend({
       });
 
       manager.goToState('invalid');
+      manager.send('invokeLifecycleCallbacks');
     },
 
     rollback: function(manager) {

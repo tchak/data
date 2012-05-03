@@ -161,7 +161,8 @@ DS.Transaction = Ember.Object.extend({
           }
 
           if (!isValid) {
-            get(store, 'defaultTransaction').adoptRecord(record);
+            defaultTransaction.adoptRecord(record);
+            defaultTransaction.recordBecameInFlight('clean', record);
           }
         });
 
@@ -185,6 +186,7 @@ DS.Transaction = Ember.Object.extend({
 
     var store = get(this, 'store');
     var adapter = get(store, '_adapter');
+    var defaultTransaction = get(store, 'defaultTransaction');
 
     this.removeCleanRecords();
 
