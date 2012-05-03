@@ -310,3 +310,36 @@ test("modified records are reset when their transaction is rolled back", functio
 
   equal(person.get('isValid'), true, "invalid record is now marked as valid");
 });
+
+test("records in error state can retry to commit", function() {
+
+  var store = DS.Store.create({
+    adapter: DS.Adapter.create({
+      commit: function() {
+        ok(false, "should never call adapter methods");
+      }
+    })
+  });
+
+  var transaction = store.transaction();
+
+  var newPerson = transaction.createRecord(Person, {
+    name: "Scumbag Paul"
+  });
+
+  equal(newPerson.get('isDirty'), true, "precond - Record is marked as dirty");
+  equal(newPerson.get('isNew'), true, "precond - Record is marked as dirty");
+
+  newPerson.send('willCommit');
+  store.recordWasError(newPerson, "500: server error");
+
+  equal(newPerson.get('isError'), true, "precond - Record is marked as error");
+  equal(newPerson.get('isDirty'), true, "precond - Record is marked as dirty");
+  equal(newPerson.get('errorMessage'), "500: server error", 'should have error message');
+
+  newPerson.send('willCommit');
+
+  equal(newPerson.get('isError'), false, "Record is no more marked as error");
+  equal(newPerson.get('isSaving'), true, "Record is marked as saving");
+  equal(newPerson.get('isNew'), true, "Record is marked as new");
+});

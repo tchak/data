@@ -430,7 +430,11 @@ var DirtyState = DS.State.extend({
       }
     },
 
-    becameError: function(manager) {
+    becameError: function(manager, errorMessage) {
+      var record = get(manager, 'record');
+
+      set(record, 'errorMessage', errorMessage);
+
       manager.goToState('error');
       manager.send('invokeLifecycleCallbacks');
     },
@@ -855,7 +859,72 @@ var states = {
     error: DS.State.create({
       isError: true,
 
+      isDirty: Ember.computed(function() {
+        return getPath(this, 'historyState.isDirty') || false;
+      }).property('historyState'),
+
+      isNew: Ember.computed(function() {
+        return getPath(this, 'historyState.isNew') || false;
+      }).property('historyState'),
+
+      historyState: null,
+
+      //TRANSITIONS
+      enter: function(manager) {
+        set(this, 'historyState', get(manager, 'currentState'));
+      },
+
+      exit: function(manager) {
+        var record = get(manager, 'record');
+
+        set(this, 'historyState', null);
+        set(record, 'errorMessage', null);
+
+        record.withTransaction(function (t) {
+          t.recordBecameClean('inflight', record);
+        });
+      },
+
       // EVENTS
+      deleteRecord: function(manager) {
+        var record = get(manager, 'record');
+        manager.send('restore');
+
+        if (!get(record, 'isDeleted')) {
+          manager.send('deleteRecord');
+        }
+      },
+
+      setAssociation: setAssociation,
+      setProperty: setProperty,
+
+      restore: function(manager) {
+        var dirtyType = getPath(this, 'historyState.dirtyType');
+
+        if (dirtyType) {
+          manager.goToState('loaded.'+dirtyType+'.uncommitted');
+        } else {
+          manager.goToState(getPath(this, 'historyState.path'));
+        }
+      },
+
+      willCommit: function(manager) {
+        var record = get(manager, 'record');
+        manager.send('restore');
+
+        if (get(record, 'isDirty')) {
+          manager.send('willCommit');
+        }
+      },
+
+      rollback: function(manager) {
+        var record = get(manager, 'record');
+        manager.send('restore');
+
+        if (get(record, 'isDirty')) {
+          manager.send('rollback');
+        }
+      },
 
       invokeLifecycleCallbacks: function(manager) {
         var record = get(manager, 'record');

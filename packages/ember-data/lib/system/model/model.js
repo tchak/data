@@ -22,6 +22,7 @@ DS.Model = Ember.Object.extend(Ember.Evented, {
   stateManager: null,
   pendingQueue: null,
   errors: null,
+  errorMessage: null,
 
   // because unknownProperty is used, any internal property
   // must be initialized here.
