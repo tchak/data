@@ -381,10 +381,6 @@ var DirtyState = DS.State.extend({
       });
 
       manager.goToState('loaded');
-    },
-
-    becameInvalid: function(manager) {
-      manager.goToState('invalid');
     }
   }, Uncommitted),
 
@@ -577,7 +573,10 @@ var DirtyState = DS.State.extend({
     },
 
     rollback: function(manager) {
-      manager.send('becameValid');
+      var record = get(manager, 'record'),
+          errors = get(record, 'errors');
+
+      errors.clear();
       manager.send('rollback');
     },
 
