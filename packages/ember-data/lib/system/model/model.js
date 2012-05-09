@@ -295,10 +295,10 @@ DS.Model = Ember.Object.extend(Ember.Evented, {
         cachedValue = this.cacheFor(name);
 
         if (cachedValue) {
-          var key = association.options.key || name,
-              ids = data.get(key) || [],
-              clientIds;
+          var key = association.options.key || get(this, 'namingConvention').keyToJSONKey(name),
+              ids = data.get(key) || [];
 
+          var clientIds;
           if (association.options.embedded) {
             clientIds = store.loadMany(association.type, ids).clientIds;
           } else {
