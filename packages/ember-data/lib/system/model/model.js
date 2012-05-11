@@ -316,7 +316,7 @@ DS.Model = Ember.Object.extend(Ember.Evented, {
           // nor should they be fetched
           var content = get(cachedValue, 'content');
           Ember.EnumerableUtils.forEach(pendingRecords, function(record) {
-            content.push(record.get('clientId'));
+            content.pushObject(record.get('clientId'));
           });
         }
       }
