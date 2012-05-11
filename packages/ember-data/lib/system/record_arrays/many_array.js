@@ -33,6 +33,7 @@ DS.ManyArray = DS.RecordArray.extend({
     var parentRecord = get(this, 'parentRecord');
     var pendingParent = parentRecord && !get(parentRecord, 'id');
     var stateManager = get(this, 'stateManager');
+    var store = get(this, 'store');
 
     // Map the array of record objects into an array of  client ids.
     added = added.map(function(record) {
@@ -49,11 +50,12 @@ DS.ManyArray = DS.RecordArray.extend({
       this.assignInverse(record, parentRecord);
 
       stateManager.send('recordWasAdded', record);
-
-      return record.get('clientId');
+      
+      var clientId = record.get('clientId');
+      store.registerRecordArrayForClientId(this, clientId);
+      
+      return clientId;
     }, this);
-
-    var store = this.store;
 
     var len = index+removed, record;
     for (var i = index; i < len; i++) {
