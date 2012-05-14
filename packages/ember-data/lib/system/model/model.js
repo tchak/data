@@ -293,7 +293,7 @@ DS.Model = Ember.Object.extend(Ember.Evented, {
     associations.forEach(function(name, association) {
       if (association.kind === 'hasMany') {
         cachedValue = this.cacheFor(name);
-
+        
         if (cachedValue) {
           var key = association.options.key || get(this, 'namingConvention').keyToJSONKey(name),
               ids = data.get(key) || [];
@@ -320,6 +320,7 @@ DS.Model = Ember.Object.extend(Ember.Evented, {
           });
         }
       }
+      
     }, this);
   }, 'data'),
 
