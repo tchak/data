@@ -21,7 +21,7 @@ DS.ManyArray = DS.RecordArray.extend({
       return;
     }
     if(get(parentRecord, 'isDirty')) {
-      stateManager.send('parentBecameDirty'); 
+      stateManager.send('parentBecameDirty');
     } else {
       stateManager.send('parentBecameClean');
     }
@@ -65,10 +65,10 @@ DS.ManyArray = DS.RecordArray.extend({
       this.assignInverse(record, parentRecord);
 
       stateManager.send('recordWasAdded', record);
-      
+
       var clientId = record.get('clientId');
       store.registerRecordArrayForClientId(this, clientId);
-      
+
       return clientId;
     }, this);
 
@@ -85,7 +85,7 @@ DS.ManyArray = DS.RecordArray.extend({
         record.send('doneWaitingOn', parentRecord);
       }
 
-      stateManager.send('recordWasAdded', record);
+      stateManager.send('recordWasRemoved', record);
     }
 
     this._super(index, removed, added);
