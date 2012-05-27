@@ -72,16 +72,16 @@ DS.ManyArray = DS.RecordArray.extend({
       return clientId;
     }, this);
 
-    var len = index+removed, record;
+    var len = index+removed, record, inverseAssociation;
     for (var i = index; i < len; i++) {
       // TODO: null out inverse FK
       record = this.objectAt(i);
-      this.assignInverse(record, parentRecord, true);
+      inverseAssociation = this.assignInverse(record, parentRecord, true);
 
       // If we put the child record into a pending state because
       // we were waiting on the parent record to get an id, we
       // can tell the child it no longer needs to wait.
-      if (pendingParent) {
+      if (inverseAssociation && pendingParent) {
         record.send('doneWaitingOn', parentRecord);
       }
 
