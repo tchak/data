@@ -907,7 +907,7 @@ var states = {
         var record = get(manager, 'record');
         record.fire('becameError', record);
       }
-    })
+    }, Uncommitted)
   })
 };
 
