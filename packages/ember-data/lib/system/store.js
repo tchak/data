@@ -425,18 +425,19 @@ DS.Store = Ember.Object.extend({
   findQuery: function(type, query, array) {
     array = array || DS.AdapterPopulatedRecordArray.create({ type: type, content: Ember.A([]), store: this });
 
-    var adapter = get(this, '_adapter'), id, clientId;
+    var adapter = get(this, '_adapter'), id, clientId, record;
     if (adapter && adapter.findQuery) {
       if (array instanceof DS.AdapterPopulatedRecordArray) {
-        adapter.findQuery(this, type, query, array, id);
+        adapter.findQuery(this, type, query, array);
       } else {
         id = array;
-        clientId = this.typeMapFor(type).idToCid[id];
+        clientId = this.clientIdForIdFromCache(type, id);
         if (clientId) {
-          this.findByClientId(type, clientId, id).send('willLoad');
+          record = this.findByClientId(type, clientId, id);
+          record.send('willLoad');
         }
         if (Ember.typeOf(query) === 'object') {
-          adapter.findQuery(this, type, query, id);
+          adapter.findQuery(this, type, query, record);
         } else {
           adapter.find(this, type, id);
         }
@@ -755,6 +756,13 @@ DS.Store = Ember.Object.extend({
     if (clientId !== undefined) { return clientId; }
 
     return this.pushHash(UNLOADED, id, type);
+  },
+
+  /** @private
+
+  */
+  clientIdForIdFromCache: function(type, id) {
+    return this.typeMapFor(type).idToCid[id];
   },
 
   // ................
