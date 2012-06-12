@@ -139,6 +139,13 @@ DS.Store = Ember.Object.extend({
   // data hashes and records.
   clientIdCounter: 1,
 
+  send: function(eventName, context) {
+    var stateManager = get(this, 'stateManager');
+    if (stateManager) {
+      stateManager.send(eventName, context);
+    }
+  },
+
   // .....................
   // . CREATE NEW RECORD .
   // .....................
@@ -461,10 +468,12 @@ DS.Store = Ember.Object.extend({
 
   didFindRecord: function(record, hash) {
     this.load(record.constructor, hash);
+    this.send('didFindRecord', record);
   },
 
   didFindRecords: function(recordArray, hashes) {
     recordArray.load(hashes);
+    this.send('didFindRecords', recordArray);
   },
 
   // ............
@@ -521,16 +530,18 @@ DS.Store = Ember.Object.extend({
     }
 
     record.send('didCommit');
+    this.send('didUpdateRecord', record);
   },
 
   didDeleteRecords: function(array) {
     array.forEach(function(record) {
-      record.send('didCommit');
-    });
+      this.didDeleteRecord(record);
+    }, this);
   },
 
   didDeleteRecord: function(record) {
     record.send('didCommit');
+    this.send('didDeleteRecord', record);
   },
 
   _didCreateRecord: function(record, hash, typeMap, clientId, primaryKey) {
@@ -556,6 +567,7 @@ DS.Store = Ember.Object.extend({
     }
 
     record.send('didCommit');
+    this.send('didCreateRecord', record);
   },
 
 
@@ -596,6 +608,7 @@ DS.Store = Ember.Object.extend({
 
   recordWasInvalid: function(record, errors) {
     record.send('becameInvalid', errors);
+    this.send('recordWasInvalid', record);
   },
 
   // .................
