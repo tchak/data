@@ -26,41 +26,13 @@ DS.RecordArray = Ember.ArrayProxy.extend({
   // The store that created this record array.
   store: null,
 
-  init: function() {
-    set(this, 'recordCache', Ember.A([]));
-    this._super();
-  },
-
-  arrayDidChange: function(array, index, removed, added) {
-    var recordCache = get(this, 'recordCache');
-    recordCache.replace(index, 0, new Array(added));
-
-    this._super(array, index, removed, added);
-  },
-
-  arrayWillChange: function(array, index, removed, added) {
-    this._super(array, index, removed, added);
-
-    var recordCache = get(this, 'recordCache');
-    recordCache.replace(index, removed);
-  },
-
   objectAtContent: function(index) {
-    var recordCache = get(this, 'recordCache');
-    var record = recordCache.objectAt(index);
+    var content = get(this, 'content'),
+        clientId = content.objectAt(index),
+        store = get(this, 'store');
 
-    if (!record) {
-      var store = get(this, 'store');
-      var content = get(this, 'content');
-
-      var contentObject = content.objectAt(index);
-
-      if (contentObject !== undefined) {
-        record = store.findByClientId(get(this, 'type'), contentObject);
-        recordCache.replace(index, 1, [record]);
-      }
+    if (clientId !== undefined) {
+      return store.findByClientId(get(this, 'type'), clientId);
     }
-
-    return record;
   }
 });
