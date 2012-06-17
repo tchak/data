@@ -280,7 +280,7 @@ var waitingOn = function(manager, object) {
 // super points to the class definition.
 var Uncommitted = Ember.Mixin.create({
   setProperty: setProperty,
-  setAssociation: setAssociation,
+  setAssociation: setAssociation
 });
 
 // These mixins are mixed into substates of the concrete
@@ -701,6 +701,15 @@ var states = {
 
       loadedData: function(manager) {
         manager.transitionTo('loaded');
+      },
+
+      becameError: function(manager, errorMessage) {
+        var record = get(manager, 'record');
+
+        get(record, 'errors').add('base', errorMessage);
+
+        manager.transitionTo('error', 'empty');
+        manager.send('invokeLifecycleCallbacks');
       }
     }),
 
