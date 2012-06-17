@@ -15,10 +15,14 @@ DS.RESTAdapter = DS.Adapter.extend({
 
     this.ajax(this.buildURL(root), "POST", {
       data: data,
+
       success: function(json) {
         this.sideload(store, type, json, root);
         store.didCreateRecord(record, json[root]);
-      }
+      },
+
+      store: store,
+      records: record
     });
   },
 
@@ -41,7 +45,10 @@ DS.RESTAdapter = DS.Adapter.extend({
       success: function(json) {
         this.sideload(store, type, json, plural);
         store.didCreateRecords(type, records, json[plural]);
-      }
+      },
+
+      store: store,
+      records: records
     });
   },
 
@@ -54,10 +61,14 @@ DS.RESTAdapter = DS.Adapter.extend({
 
     this.ajax(this.buildURL(root, id), "PUT", {
       data: data,
+
       success: function(json) {
         this.sideload(store, type, json, root);
         store.didUpdateRecord(record, json && json[root]);
-      }
+      },
+
+      store: store,
+      records: record
     });
   },
 
@@ -76,10 +87,14 @@ DS.RESTAdapter = DS.Adapter.extend({
 
     this.ajax(this.buildURL(root, "bulk"), "PUT", {
       data: data,
+
       success: function(json) {
         this.sideload(store, type, json, plural);
         store.didUpdateRecords(records, json[plural]);
-      }
+      },
+
+      store: store,
+      records: records
     });
   },
 
@@ -91,7 +106,10 @@ DS.RESTAdapter = DS.Adapter.extend({
       success: function(json) {
         if (json) { this.sideload(store, type, json); }
         store.didDeleteRecord(record);
-      }
+      },
+
+      store: store,
+      records: record
     });
   },
 
@@ -113,7 +131,10 @@ DS.RESTAdapter = DS.Adapter.extend({
       success: function(json) {
         if (json) { this.sideload(store, type, json); }
         store.didDeleteRecords(records);
-      }
+      },
+
+      store: store,
+      records: records
     });
   },
 
@@ -124,7 +145,10 @@ DS.RESTAdapter = DS.Adapter.extend({
       success: function(json) {
         this.sideload(store, type, json, root);
         store.didFindRecord(record, json[root]);
-      }
+      },
+
+      store: store,
+      records: record
     });
   },
 
@@ -144,7 +168,10 @@ DS.RESTAdapter = DS.Adapter.extend({
       success: function(json) {
         this.sideload(store, type, json, plural);
         store.didFindRecords(recordArray, json[plural]);
-      }
+      },
+
+      store: store,
+      recordArray: recordArray
     });
   },
 
@@ -178,7 +205,41 @@ DS.RESTAdapter = DS.Adapter.extend({
       hash.data = JSON.stringify(hash.data);
     }
 
-    jQuery.ajax(hash);
+    var store = hash.store,
+        records = Ember.makeArray(hash.records),
+        recordArray = hash.recordArray;
+    delete hash.store;
+    delete hash.records;
+    delete hash.recordArray;
+
+    hash.error = function(jqXHR, textStatus, errorThrown) {
+      var data = Ember.$.parseJSON(jqXHR.responseText),
+          errorMessage = data['error'] || (errorThrown && errorThrown.message) || textStatus;
+
+      if (recordArray) {
+        this.handleRecordArrayError(store, recordArray, errorMessage);
+      } else {
+        this.handleRecordError(store, records, errorMessage, data['errors']);
+      }
+    };
+
+    Ember.$.ajax(hash);
+  },
+
+  handleRecordError: function(store, records, errorMessage, validationErrors) {
+    if (jqXHR.status === 422) {
+      records.forEach(function(record) {
+        store.recordWasInvalid(record, validationErrors);
+      });
+    } else {
+      records.forEach(function(record) {
+        store.recordDidError(record, errorMessage);
+      });
+    }
+  },
+
+  handleRecordArrayError: function(store, recordArray, errorMessage) {
+    store.recordArrayDidError(recordArray, errorMessage);
   },
 
   sideload: function(store, type, json, root) {

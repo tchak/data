@@ -611,6 +611,14 @@ DS.Store = Ember.Object.extend({
     record.send('becameInvalid', errors);
   },
 
+  recordDidError: function(record, errorMessage) {
+    record.send('becameError', errorMessage);
+  },
+
+  recordArrayDidError: function(recordArray, errorMessage) {
+    set(recordArray, 'isError', true);
+  },
+
   // .................
   // . RECORD ARRAYS .
   // .................
