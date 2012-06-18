@@ -21,8 +21,9 @@ DS.RESTAdapter = DS.Adapter.extend({
         store.didCreateRecord(record, json[root]);
       },
 
-      store: store,
-      records: record
+      error: function(jqXHR, textStatus, errorThrown) {
+        this.handleRecordError(store, [record], jqXHR, textStatus, errorThrown);
+      }
     });
   },
 
@@ -47,8 +48,9 @@ DS.RESTAdapter = DS.Adapter.extend({
         store.didCreateRecords(type, records, json[plural]);
       },
 
-      store: store,
-      records: records
+      error: function(jqXHR, textStatus, errorThrown) {
+        this.handleRecordError(store, records, jqXHR, textStatus, errorThrown);
+      }
     });
   },
 
@@ -67,8 +69,9 @@ DS.RESTAdapter = DS.Adapter.extend({
         store.didUpdateRecord(record, json && json[root]);
       },
 
-      store: store,
-      records: record
+      error: function(jqXHR, textStatus, errorThrown) {
+        this.handleRecordError(store, [record], jqXHR, textStatus, errorThrown);
+      }
     });
   },
 
@@ -93,8 +96,9 @@ DS.RESTAdapter = DS.Adapter.extend({
         store.didUpdateRecords(records, json[plural]);
       },
 
-      store: store,
-      records: records
+      error: function(jqXHR, textStatus, errorThrown) {
+        this.handleRecordError(store, records, jqXHR, textStatus, errorThrown);
+      }
     });
   },
 
@@ -108,8 +112,9 @@ DS.RESTAdapter = DS.Adapter.extend({
         store.didDeleteRecord(record);
       },
 
-      store: store,
-      records: record
+      error: function(jqXHR, textStatus, errorThrown) {
+        this.handleRecordError(store, [record], jqXHR, textStatus, errorThrown);
+      }
     });
   },
 
@@ -133,8 +138,9 @@ DS.RESTAdapter = DS.Adapter.extend({
         store.didDeleteRecords(records);
       },
 
-      store: store,
-      records: records
+      error: function(jqXHR, textStatus, errorThrown) {
+        this.handleRecordError(store, records, jqXHR, textStatus, errorThrown);
+      }
     });
   },
 
@@ -147,8 +153,9 @@ DS.RESTAdapter = DS.Adapter.extend({
         store.didFindRecord(record, json[root]);
       },
 
-      store: store,
-      records: record
+      error: function(jqXHR, textStatus, errorThrown) {
+        this.handleRecordError(store, [record], jqXHR, textStatus, errorThrown);
+      }
     });
   },
 
@@ -170,8 +177,9 @@ DS.RESTAdapter = DS.Adapter.extend({
         store.didFindRecords(recordArray, json[plural]);
       },
 
-      store: store,
-      recordArray: recordArray
+      error: function(jqXHR, textStatus, errorThrown) {
+        this.handleRecordArrayError(store, recordArray, jqXHR, textStatus, errorThrown);
+      }
     });
   },
 
@@ -205,40 +213,29 @@ DS.RESTAdapter = DS.Adapter.extend({
       hash.data = JSON.stringify(hash.data);
     }
 
-    var store = hash.store,
-        records = Ember.makeArray(hash.records),
-        recordArray = hash.recordArray;
-    delete hash.store;
-    delete hash.records;
-    delete hash.recordArray;
-
-    hash.error = function(jqXHR, textStatus, errorThrown) {
-      var data = Ember.$.parseJSON(jqXHR.responseText),
-          errorMessage = data['error'] || (errorThrown && errorThrown.message) || textStatus;
-
-      if (recordArray) {
-        this.handleRecordArrayError(store, recordArray, errorMessage);
-      } else {
-        this.handleRecordError(store, records, errorMessage, data['errors']);
-      }
-    };
-
     Ember.$.ajax(hash);
   },
 
-  handleRecordError: function(store, records, errorMessage, validationErrors) {
+  handleRecordError: function(store, records, jqXHR, textStatus, errorThrown) {
+    var data = Ember.$.parseJSON(jqXHR.responseText),
+        errorMessage;
+
     if (jqXHR.status === 422) {
       records.forEach(function(record) {
-        store.recordWasInvalid(record, validationErrors);
+        store.recordWasInvalid(record, data['errors']);
       });
     } else {
+      errorMessage = data['error'] || (errorThrown && errorThrown.message) || textStatus;
       records.forEach(function(record) {
         store.recordDidError(record, errorMessage);
       });
     }
   },
 
-  handleRecordArrayError: function(store, recordArray, errorMessage) {
+  handleRecordArrayError: function(store, recordArray, jqXHR, textStatus, errorThrown) {
+    var data = Ember.$.parseJSON(jqXHR.responseText),
+        errorMessage = data['error'] || (errorThrown && errorThrown.message) || textStatus;
+
     store.recordArrayDidError(recordArray, errorMessage);
   },
 
