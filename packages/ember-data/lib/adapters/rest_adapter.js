@@ -216,8 +216,14 @@ DS.RESTAdapter = DS.Adapter.extend({
     Ember.$.ajax(hash);
   },
 
+  responseJSON: function(jqXHR) {
+    var data = {};
+    try { data = JSON.parse(jqXHR.responseText); } catch (e) {}
+    return data;
+  },
+
   handleRecordError: function(store, records, jqXHR, textStatus, errorThrown) {
-    var data = Ember.$.parseJSON(jqXHR.responseText),
+    var data = this.responseJSON(jqXHR),
         errorMessage;
 
     if (jqXHR.status === 422) {
@@ -233,7 +239,7 @@ DS.RESTAdapter = DS.Adapter.extend({
   },
 
   handleRecordArrayError: function(store, recordArray, jqXHR, textStatus, errorThrown) {
-    var data = Ember.$.parseJSON(jqXHR.responseText),
+    var data = this.responseJSON(jqXHR),
         errorMessage = data['error'] || (errorThrown && errorThrown.message) || textStatus;
 
     store.recordArrayDidError(recordArray, errorMessage);
