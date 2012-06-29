@@ -390,7 +390,7 @@ var DirtyState = DS.State.extend({
         t.recordBecameClean(dirtyType, record);
       });
 
-      manager.transitionTo('loaded');
+      manager.transitionTo('saved');
     }
   }, Uncommitted),
 
@@ -420,7 +420,7 @@ var DirtyState = DS.State.extend({
         t.recordBecameClean('inflight', record);
       });
 
-      manager.transitionTo('loaded');
+      manager.transitionTo('saved');
       manager.send('invokeLifecycleCallbacks', dirtyType);
     },
 
@@ -446,7 +446,8 @@ var DirtyState = DS.State.extend({
       manager.send('invokeLifecycleCallbacks');
     },
 
-    didChangeData: didChangeData
+    didChangeData: didChangeData,
+    waitingOn: Ember.K
   }),
 
   // If a record becomes associated with a newly created
@@ -505,7 +506,9 @@ var DirtyState = DS.State.extend({
       doneWaiting: function(manager) {
         var dirtyType = get(this, 'dirtyType');
         manager.transitionTo(dirtyType + '.uncommitted');
-      }
+      },
+
+      becameValid: Ember.K
     }, Uncommitted),
 
     // A pending record whose transaction has started
@@ -546,6 +549,12 @@ var DirtyState = DS.State.extend({
           var dirtyType = get(this, 'dirtyType');
           manager.transitionTo(dirtyType + '.inFlight');
         }
+      },
+
+      rollback: function(manager) {
+        var dirtyType = get(this, 'dirtyType');
+        manager.transitionTo(dirtyType + '.uncommitted');
+        manager.send('rollback');
       }
     })
   }),
@@ -750,6 +759,8 @@ var states = {
           manager.transitionTo('updated.pending');
         },
 
+        doneWaitingOn: Ember.K,
+
         invokeLifecycleCallbacks: function(manager, dirtyType) {
           var record = get(manager, 'record');
           if (dirtyType === 'created') {
@@ -824,7 +835,7 @@ var states = {
           record.withTransaction(function(t) {
             t.recordBecameClean('deleted', record);
           });
-          manager.transitionTo('loaded');
+          manager.transitionTo('saved');
         }
       }),
 
