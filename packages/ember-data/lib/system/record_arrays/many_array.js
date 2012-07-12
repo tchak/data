@@ -46,7 +46,6 @@ DS.ManyArray = DS.RecordArray.extend({
   // Overrides Ember.Array's replace method to implement
   replace: function(index, removed, added) {
     var parentRecord = get(this, 'parentRecord');
-    var pendingParent = parentRecord && get(parentRecord, 'isDirty'); // && !get(parentRecord, 'id');
     var stateManager = get(this, 'stateManager');
     var store = get(this, 'store');
 
@@ -55,14 +54,6 @@ DS.ManyArray = DS.RecordArray.extend({
       Ember.assert("You can only add records of " + (get(this, 'type') && get(this, 'type').toString()) + " to this association.", !get(this, 'type') || (get(this, 'type') === record.constructor));
 
       var inverseAssociation = this.assignInverse(record, parentRecord);
-
-      // If the record to which this many array belongs does not yet
-      // have an id, notify the newly-added record that it must wait
-      // for the parent to receive an id before the child can be
-      // saved.
-      if (inverseAssociation && pendingParent) {
-        record.send('waitingOn', parentRecord);
-      }
 
       stateManager.send('recordWasAdded', record);
 
@@ -77,13 +68,6 @@ DS.ManyArray = DS.RecordArray.extend({
       // TODO: null out inverse FK
       record = this.objectAt(i);
       inverseAssociation = this.assignInverse(record, parentRecord, true);
-
-      // If we put the child record into a pending state because
-      // we were waiting on the parent record to get an id, we
-      // can tell the child it no longer needs to wait.
-      if (inverseAssociation && pendingParent) {
-        record.send('doneWaitingOn', parentRecord);
-      }
 
       stateManager.send('recordWasRemoved', record);
     }

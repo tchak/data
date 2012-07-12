@@ -238,10 +238,6 @@ DS.Model = Ember.Object.extend(Ember.Evented, {
     this.send('deleteRecord');
   },
 
-  waitingOn: function(record) {
-    this.send('waitingOn', record);
-  },
-
   notifyHashWasUpdated: function() {
     var store = get(this, 'store');
     if (store) {

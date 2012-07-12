@@ -182,7 +182,6 @@ DS.State = Ember.State.extend({
   isError: stateProperty,
   isNew: stateProperty,
   isValid: stateProperty,
-  isPending: stateProperty,
 
   // For states that are substates of a
   // DirtyState (updated or created), it is
@@ -215,28 +214,6 @@ var didChangeData = function(manager) {
 
   data._savedData = null;
   record.notifyPropertyChange('data');
-};
-
-// The waitingOn event shares common functionality
-// between the different dirty states, but each is
-// treated slightly differently. This method is exposed
-// so that each implementation can invoke the common
-// behavior, and then implement the behavior specific
-// to the state.
-var waitingOn = function(manager, object) {
-  var record = get(manager, 'record'),
-      pendingQueue = get(record, 'pendingQueue'),
-      objectGuid = guidFor(object);
-
-  var observer = function() {
-    if (get(object, 'id')) {
-      manager.send('doneWaitingOn', object);
-      Ember.removeObserver(object, 'id', observer);
-    }
-  };
-
-  pendingQueue[objectGuid] = [object, observer];
-  Ember.addObserver(object, 'id', observer);
 };
 
 // Implementation notes:
@@ -343,11 +320,6 @@ var DirtyState = DS.State.extend({
     // EVENTS
     deleteRecord: Ember.K,
 
-    waitingOn: function(manager, object) {
-      waitingOn(manager, object);
-      manager.transitionTo('pending');
-    },
-
     willCommit: function(manager) {
       var record = get(manager, 'record'),
           isValid = record.valid();
@@ -446,117 +418,7 @@ var DirtyState = DS.State.extend({
       manager.send('invokeLifecycleCallbacks');
     },
 
-    didChangeData: didChangeData,
-    waitingOn: Ember.K
-  }),
-
-  // If a record becomes associated with a newly created
-  // parent record, it will be `pending` until the parent
-  // record has successfully persisted. Once this happens,
-  // this record can use the parent's primary key as its
-  // foreign key.
-  //
-  // If the record's transaction had already started to
-  // commit, the record will transition to the `inFlight`
-  // state. If it had not, the record will transition to
-  // the `uncommitted` state.
-  pending: DS.State.extend({
-    initialState: 'uncommitted',
-
-    // FLAGS
-    isPending: true,
-
-    // SUBSTATES
-
-    // A pending record whose transaction has not yet
-    // started to commit is in this state.
-    uncommitted: DS.State.extend({
-      // EVENTS
-      deleteRecord: function(manager) {
-        var record = get(manager, 'record'),
-            pendingQueue = get(record, 'pendingQueue'),
-            tuple;
-
-        // since we are leaving the pending state, remove any
-        // observers we have registered on other records.
-        for (var prop in pendingQueue) {
-          if (!pendingQueue.hasOwnProperty(prop)) { continue; }
-
-          tuple = pendingQueue[prop];
-          Ember.removeObserver(tuple[0], 'id', tuple[1]);
-        }
-      },
-
-      willCommit: function(manager) {
-        manager.transitionTo('committing');
-      },
-
-      doneWaitingOn: function(manager, object) {
-        var record = get(manager, 'record'),
-            pendingQueue = get(record, 'pendingQueue'),
-            objectGuid = guidFor(object);
-
-        delete pendingQueue[objectGuid];
-
-        if (isEmptyObject(pendingQueue)) {
-          manager.send('doneWaiting');
-        }
-      },
-
-      doneWaiting: function(manager) {
-        var dirtyType = get(this, 'dirtyType');
-        manager.transitionTo(dirtyType + '.uncommitted');
-      },
-
-      becameValid: Ember.K
-    }, Uncommitted),
-
-    // A pending record whose transaction has started
-    // to commit is in this state. Since it has not yet
-    // been sent to the adapter, it is not `inFlight`
-    // until all of its dependencies have been committed.
-    committing: DS.State.extend({
-      // FLAGS
-      isSaving: true,
-
-      // EVENTS
-      doneWaitingOn: function(manager, object) {
-        var record = get(manager, 'record'),
-            pendingQueue = get(record, 'pendingQueue'),
-            objectGuid = guidFor(object);
-
-        delete pendingQueue[objectGuid];
-
-        if (isEmptyObject(pendingQueue)) {
-          manager.send('doneWaiting');
-        }
-      },
-
-      doneWaiting: function(manager) {
-        var record = get(manager, 'record'),
-            transaction = get(record, 'transaction');
-
-        // Now that the record is no longer pending, schedule
-        // the transaction to commit.
-        Ember.run.once(transaction, transaction.commit);
-      },
-
-      willCommit: function(manager) {
-        var record = get(manager, 'record'),
-            pendingQueue = get(record, 'pendingQueue');
-
-        if (isEmptyObject(pendingQueue)) {
-          var dirtyType = get(this, 'dirtyType');
-          manager.transitionTo(dirtyType + '.inFlight');
-        }
-      },
-
-      rollback: function(manager) {
-        var dirtyType = get(this, 'dirtyType');
-        manager.transitionTo(dirtyType + '.uncommitted');
-        manager.send('rollback');
-      }
-    })
+    didChangeData: didChangeData
   }),
 
   // A record is in the `invalid` state when its client-side
@@ -632,7 +494,6 @@ var updatedState = DirtyState.create({
 // The created.uncommitted state and created.pending.uncommitted share
 // some logic defined in CreatedUncommitted.
 createdState.states.uncommitted.reopen(CreatedUncommitted);
-createdState.states.pending.states.uncommitted.reopen(CreatedUncommitted);
 
 // The created.uncommitted state needs to immediately transition to the
 // deleted state if it is rolled back.
@@ -646,7 +507,6 @@ createdState.states.uncommitted.reopen({
 // The updated.uncommitted state and updated.pending.uncommitted share
 // some logic defined in UpdatedUncommitted.
 updatedState.states.uncommitted.reopen(UpdatedUncommitted);
-updatedState.states.pending.states.uncommitted.reopen(UpdatedUncommitted);
 updatedState.states.inFlight.reopen({
   didSaveData: function(manager) {
     var record = get(manager, 'record'),
@@ -754,13 +614,6 @@ var states = {
           manager.transitionTo('deleted');
         },
 
-        waitingOn: function(manager, object) {
-          waitingOn(manager, object);
-          manager.transitionTo('updated.pending');
-        },
-
-        doneWaitingOn: Ember.K,
-
         invokeLifecycleCallbacks: function(manager, dirtyType) {
           var record = get(manager, 'record');
           if (dirtyType === 'created') {
@@ -814,12 +667,7 @@ var states = {
 
         // EVENTS
         willCommit: function(manager) {
-          var record = get(manager, 'record'),
-              isValid = record.valid();
-
-          if (isValid) {
-            manager.transitionTo('inFlight');
-          }
+          manager.transitionTo('inFlight');
         },
 
         becameValid: function(manager) {
@@ -835,7 +683,7 @@ var states = {
           record.withTransaction(function(t) {
             t.recordBecameClean('deleted', record);
           });
-          manager.transitionTo('saved');
+          manager.transitionTo('loaded.saved');
         }
       }),
 

@@ -73,20 +73,6 @@ test("if an association with no inverse has existing clean records added to it, 
   equal(get(destinations, 'isDirty'), false, "many array remains clean when added record remains clean");
 });
 
-test("if records with an inverse association are added to an unpersisted parent's association, they are in a pending state", function() {
-  store.loadMany(Person, [{ id: 1 }, { id: 2 }, { id: 3 }]);
-
-  var group = store.createRecord(Group, {});
-  var people = get(group, 'people');
-  var person = store.find(Person, 1);
-
-  equal(get(people, 'length'), 0, 'precond - associations are initially correct');
-  equal(get(person, 'isPending'), false, 'precond - associated record is initially not pending');
-  people.pushObject(person);
-  equal(get(people, 'length'), 1, 'after adding a record associations length increases');
-  equal(get(person, 'isPending'), true, 'after adding the associated record, it is in a pending state');
-});
-
 test("if an association has newly created records added to it, its isDirty is true", function() {
   store.load(Group, { id: 1, people: [ 1, 2 ] });   
   store.loadMany(Person, [{ id: 1 }, { id: 2 }, { id: 3 }]);
