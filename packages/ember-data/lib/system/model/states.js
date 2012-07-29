@@ -1,4 +1,4 @@
-var get = Ember.get, set = Ember.set, getPath = Ember.getPath, guidFor = Ember.guidFor;
+var get = Ember.get, set = Ember.set, guidFor = Ember.guidFor;
 
 /**
   This file encapsulates the various states that a record can transition
@@ -27,7 +27,7 @@ var get = Ember.get, set = Ember.set, getPath = Ember.getPath, guidFor = Ember.g
   string. You can determine a record's current state by getting its manager's
   current state path:
 
-        record.getPath('stateManager.currentState.path');
+        record.get('stateManager.currentState.path');
         //=> "created.uncommitted"
 
   The `DS.Model` states are themselves stateless. What we mean is that,
@@ -113,7 +113,7 @@ var get = Ember.get, set = Ember.set, getPath = Ember.getPath, guidFor = Ember.g
   state in a more user-friendly way than examining its state path. For example,
   instead of doing this:
 
-      var statePath = record.getPath('stateManager.currentState.path');
+      var statePath = record.get('stateManager.currentState.path');
       if (statePath === 'created.inFlight') {
         doSomething();
       }
@@ -471,7 +471,7 @@ var DirtyState = DS.State.extend({
 
     invokeLifecycleCallbacks: function(manager) {
       var record = get(manager, 'record');
-      record.fire('becameInvalid', record);
+      record.trigger('becameInvalid', record);
     }
   })
 });
@@ -559,7 +559,7 @@ var states = {
       // TRANSITIONS
       exit: function(manager) {
         var record = get(manager, 'record');
-        record.fire('didLoad');
+        record.trigger('didLoad');
       },
 
       // EVENTS
@@ -617,9 +617,9 @@ var states = {
         invokeLifecycleCallbacks: function(manager, dirtyType) {
           var record = get(manager, 'record');
           if (dirtyType === 'created') {
-            record.fire('didCreate', record);
+            record.trigger('didCreate', record);
           } else {
-            record.fire('didUpdate', record);
+            record.trigger('didUpdate', record);
           }
         }
       }),
@@ -745,7 +745,7 @@ var states = {
         // EVENTS
         invokeLifecycleCallbacks: function(manager) {
           var record = get(manager, 'record');
-          record.fire('didDelete', record);
+          record.trigger('didDelete', record);
         }
       })
     }),
@@ -782,7 +782,7 @@ var states = {
 
       invokeLifecycleCallbacks: function(manager) {
         var record = get(manager, 'record');
-        record.fire('becameError', record);
+        record.trigger('becameError', record);
       }
     }, Uncommitted)
   })

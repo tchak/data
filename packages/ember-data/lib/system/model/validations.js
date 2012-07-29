@@ -1,4 +1,4 @@
-var getPath = Ember.getPath;
+var get = Ember.get;
 
 DS.Model.reopen({
   validate: Ember.K,
@@ -8,7 +8,7 @@ DS.Model.reopen({
 
     this.validate();
 
-    if (!getPath(this, 'errors.isEmpty')) {
+    if (!get(this, 'errors.isEmpty')) {
       this.send('becameInvalid');
       return false;
     }

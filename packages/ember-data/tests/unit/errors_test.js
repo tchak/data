@@ -175,7 +175,7 @@ test("created records in error state can retry to commit", function() {
   store.recordDidError(newPerson, "500: server error");
 
   equal(newPerson.get('isError'), true, "precond - Record is marked as error");
-  equal(newPerson.getPath('errors.base.firstObject'), "500: server error", 'should have error message');
+  equal(newPerson.get('errors.base.firstObject'), "500: server error", 'should have error message');
 
   newPerson.send('willCommit');
 
@@ -198,7 +198,7 @@ test("created records in error state can rollback", function() {
   store.recordDidError(newPerson, "500: server error");
 
   equal(newPerson.get('isError'), true, "precond - Record is marked as error");
-  equal(newPerson.getPath('errors.base.firstObject'), "500: server error", 'should have error message');
+  equal(newPerson.get('errors.base.firstObject'), "500: server error", 'should have error message');
 
   transaction.rollback();
 
@@ -220,7 +220,7 @@ test("updated records in error state can retry to commit", function() {
   store.recordDidError(updatedPerson, "500: server error");
 
   equal(updatedPerson.get('isError'), true, "precond - Record is marked as error");
-  equal(updatedPerson.getPath('errors.base.firstObject'), "500: server error", 'should have error message');
+  equal(updatedPerson.get('errors.base.firstObject'), "500: server error", 'should have error message');
 
   updatedPerson.send('willCommit');
 
@@ -241,7 +241,7 @@ test("updated records in error state can rollback", function() {
   store.recordDidError(updatedPerson, "500: server error");
 
   equal(updatedPerson.get('isError'), true, "precond - Record is marked as error");
-  equal(updatedPerson.getPath('errors.base.firstObject'), "500: server error", 'should have error message');
+  equal(updatedPerson.get('errors.base.firstObject'), "500: server error", 'should have error message');
 
   updatedPerson.get('transaction').rollback();
 
@@ -264,7 +264,7 @@ test("deleted records in error state can retry to commit", function() {
   store.recordDidError(deletedPerson, "500: server error");
 
   equal(deletedPerson.get('isError'), true, "precond - Record is marked as error");
-  equal(deletedPerson.getPath('errors.base.firstObject'), "500: server error", 'should have error message');
+  equal(deletedPerson.get('errors.base.firstObject'), "500: server error", 'should have error message');
 
   deletedPerson.send('willCommit');
 
@@ -287,7 +287,7 @@ test("deleted records in error state can rollback", function() {
   store.recordDidError(deletedPerson, "500: server error");
 
   equal(deletedPerson.get('isError'), true, "precond - Record is marked as error");
-  equal(deletedPerson.getPath('errors.base.firstObject'), "500: server error", 'should have error message');
+  equal(deletedPerson.get('errors.base.firstObject'), "500: server error", 'should have error message');
 
   deletedPerson.get('transaction').rollback();
 

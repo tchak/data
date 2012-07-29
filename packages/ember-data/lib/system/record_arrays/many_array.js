@@ -1,7 +1,7 @@
 require("ember-data/system/record_arrays/record_array");
 require("ember-data/system/record_arrays/many_array_states");
 
-var get = Ember.get, set = Ember.set, getPath = Ember.getPath;
+var get = Ember.get, set = Ember.set;
 
 DS.ManyArray = DS.RecordArray.extend({
   init: function() {
@@ -17,7 +17,7 @@ DS.ManyArray = DS.RecordArray.extend({
         parentRecord = get(this, 'parentRecord');
     // without this check, this is hit before
     // the parentRecord is done initializing
-    if(!getPath(this, 'parentRecord.stateManager')) {
+    if(!get(this, 'parentRecord.stateManager')) {
       return;
     }
     if(get(parentRecord, 'isDirty')) {
@@ -28,7 +28,7 @@ DS.ManyArray = DS.RecordArray.extend({
   }, 'parentRecord.isDirty'),
 
   isDirty: Ember.computed(function() {
-    return getPath(this, 'stateManager.currentState.isDirty');
+    return get(this, 'stateManager.currentState.isDirty');
   }).property('stateManager.currentState').cacheable(),
 
   fetch: function() {

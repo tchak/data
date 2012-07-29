@@ -1,4 +1,4 @@
-var get = Ember.get, set = Ember.set, getPath = Ember.getPath;
+var get = Ember.get, set = Ember.set;
 
 var Person, store, array;
 
@@ -468,18 +468,18 @@ test("unload child record", function() {
   var record = store.find(Record, 1);
   var childRecord = record.get('children').objectAt(0);
 
-  equal(record.getPath('children.length'), 1, 'has one child');
+  equal(record.get('children.length'), 1, 'has one child');
   equal(records.get('length'), 1, 'found one record');
 
   var childRecord2 = store.createRecord(ChildRecord, {});
   record.get('children').pushObject(childRecord2);
 
-  equal(record.getPath('children.length'), 2, 'has two children');
+  equal(record.get('children.length'), 2, 'has two children');
   equal(records.get('length'), 2, 'found two records');
 
   store.unloadRecord(childRecord);
 
-  equal(record.getPath('children.length'), 1, "record has one child");
+  equal(record.get('children.length'), 1, "record has one child");
   equal(records.get('length'), 1, 'found one record');
 
   equal(get(childRecord, 'isDirty'), false, "record is not dirty");
@@ -489,6 +489,6 @@ test("unload child record", function() {
 
   store.unloadRecord(childRecord2);
 
-  //equal(record.getPath('children.length'), 0, "record has no more children");
+  //equal(record.get('children.length'), 0, "record has no more children");
   equal(records.get('length'), 0, 'found no records');
 });

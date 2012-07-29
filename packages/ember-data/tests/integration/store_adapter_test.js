@@ -11,7 +11,7 @@
  the given record orrecord arrayay changes state appropriately.
 */
 
-var get = Ember.get, set = Ember.set, getPath = Ember.getPath;
+var get = Ember.get, set = Ember.set;
 var Person, store, adapter;
 
 module("DS.Store and DS.Adapter integration test", {
@@ -727,11 +727,11 @@ test("can update hasMany associations with naming convention", function() {
 
   var project = store.find(Project, 1);
 
-  equal(getPath(project, 'bros.length'), 2, "has 2 bros");
-  equal(getPath(project, 'superBros.length'), 2, "has 2 super bros");
+  equal(get(project, 'bros.length'), 2, "has 2 bros");
+  equal(get(project, 'superBros.length'), 2, "has 2 super bros");
 
   store.load(Project, { id: 1, super_bros: [1, 2, 3], bros: [1, 2, 3] });
 
-  equal(getPath(project, 'bros.length'), 3, "has 3 bros");
-  equal(getPath(project, 'superBros.length'), 3, "has 3 super bros");
+  equal(get(project, 'bros.length'), 3, "has 3 bros");
+  equal(get(project, 'superBros.length'), 3, "has 3 super bros");
 });

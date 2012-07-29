@@ -1,5 +1,4 @@
-var get = Ember.get, set = Ember.set, getPath = Ember.getPath,
-    none = Ember.none;
+var get = Ember.get, set = Ember.set, none = Ember.none;
 
 var embeddedFindRecord = function(store, type, data, key, one) {
   var association = get(data, key);
@@ -23,7 +22,7 @@ var hasAssociation = function(type, options, one) {
         store = get(this, 'store');
 
     if (typeof type === 'string') {
-      type = getPath(this, type, false) || getPath(window, type);
+      type = get(this, type, false) || get(window, type);
     }
 
     if (arguments.length === 2) {

@@ -1,4 +1,4 @@
-var get = Ember.get, set = Ember.set, getPath = Ember.getPath;
+var get = Ember.get, set = Ember.set;
 
 var store, adapter;
 var Comment;
@@ -126,7 +126,7 @@ test("committing a transaction that creates a parent-child hierarchy does not ov
   
   equal(createCalled, 2, "create was called twice");
   
-  var comments = parent.getPath('comments');
+  var comments = parent.get('comments');
   var child = comments.objectAt(0);
   
   //equal(child.get('body'), 'child', "child should be present");
@@ -158,7 +158,7 @@ test("modifying the parent and deleting a child inside a single transaction shou
     parent = store.find(Comment, 1);
   });
   
-  equal(parent.getPath('comments.length'), 2, 'parent record should have 2 children');
+  equal(parent.get('comments.length'), 2, 'parent record should have 2 children');
   
   var child = parent.get('comments').objectAt(0);
   
@@ -170,7 +170,7 @@ test("modifying the parent and deleting a child inside a single transaction shou
   });
   
   equal(parent.get('body'), 'this is a new body', 'parent should be updated');
-  equal(parent.getPath('comments.length'), 1, 'child should have been deleted');
+  equal(parent.get('comments.length'), 1, 'child should have been deleted');
   
 });
 
@@ -242,7 +242,7 @@ test("modifying the parent, deleting a child, and modifying another child", func
     parent = store.find(Comment, 1);
   });
   
-  equal(parent.getPath('comments.length'), 2, 'parent record should have 2 children');
+  equal(parent.get('comments.length'), 2, 'parent record should have 2 children');
   
   var child1 = parent.get('comments').objectAt(0);
   var child2 = parent.get('comments').objectAt(1);
@@ -256,7 +256,7 @@ test("modifying the parent, deleting a child, and modifying another child", func
   });
   
   equal(parent.get('body'), 'this is a new parent body', 'parent should be updated');
-  equal(parent.getPath('comments.length'), 1, 'child1 should have been deleted');
+  equal(parent.get('comments.length'), 1, 'child1 should have been deleted');
   equal(child2.get('body'), 'this is a new child body', 'child2 should have been updated');
   
 });
