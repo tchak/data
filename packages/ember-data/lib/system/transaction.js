@@ -88,7 +88,7 @@ var RelationshipLink = function(parent, child) {
 
 var arrayDefault = function() { return []; };
 
-DS.Transaction = Ember.Object.extend({
+DS.Transaction = Ember.Object.extend(Ember.Deferred, {
   /**
     @private
 
@@ -199,9 +199,40 @@ DS.Transaction = Ember.Object.extend({
 
     this.removeCleanRecords();
 
-    if (commitDetails.created.length || commitDetails.updated.length || commitDetails.deleted.length || !relationships.isEmpty()) {
+    var commitingRecords = commitDetails.created.length + commitDetails.updated.length + commitDetails.deleted.length,
+        commitedRecords = 0, dirtyRecords = [];
+
+    if (commitingRecords || !relationships.isEmpty()) {
       if (adapter && adapter.commit) { adapter.commit(store, commitDetails); }
-      else { throw fmt("Adapter is either null or does not implement `commit` method", this); }
+      else { throw "Adapter is either null or does not implement `commit` method"; }
+
+      this.progress(function(record) {
+        commitedRecords++;
+
+        if (get(record, 'isDirty') || get(record, 'isError')) {
+          dirtyRecords.push(record);
+        }
+
+        if (commitingRecords === commitedRecords) {
+          this.didCommit(dirtyRecords);
+        }
+      }, this);
+    }
+
+    return this;
+  },
+
+  didCommit: function(dirtyRecords) {
+    if (dirtyRecords.length) {
+      var transaction = get(this, 'store').transaction();
+
+      // FIXME: We should be able to do this
+      // forEach(dirtyRecords, function(record) {
+      //   transaction.add(record);
+      // });
+      this.reject(transaction);
+    } else {
+      this.resolve(this);
     }
   },
 

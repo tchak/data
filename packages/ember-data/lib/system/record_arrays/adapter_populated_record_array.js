@@ -2,7 +2,7 @@ require("ember-data/system/record_arrays/record_array");
 
 var get = Ember.get, set = Ember.set;
 
-DS.AdapterPopulatedRecordArray = DS.RecordArray.extend({
+DS.AdapterPopulatedRecordArray = DS.RecordArray.extend(Ember.Deferred, {
   query: null,
 
   replace: function() {
@@ -21,5 +21,6 @@ DS.AdapterPopulatedRecordArray = DS.RecordArray.extend({
     this.endPropertyChanges();
 
     this.trigger('didLoad');
+    this.resolve(this);
   }
 });

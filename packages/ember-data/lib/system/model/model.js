@@ -6,7 +6,7 @@ var retrieveFromCurrentState = Ember.computed(function(key) {
   return get(get(this, 'stateManager.currentState'), key);
 }).property('stateManager.currentState').cacheable();
 
-DS.Model = Ember.Object.extend(Ember.Evented, {
+DS.Model = Ember.Object.extend(Ember.Evented, Ember.Deferred, {
   isLoaded: retrieveFromCurrentState,
   isDirty: retrieveFromCurrentState,
   isSaving: retrieveFromCurrentState,

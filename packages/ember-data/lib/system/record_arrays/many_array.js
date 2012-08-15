@@ -33,7 +33,7 @@ var get = Ember.get, set = Ember.set;
   We call the record to which an association belongs the
   association's _owner_.
 */
-DS.ManyArray = DS.RecordArray.extend({
+DS.ManyArray = DS.RecordArray.extend(Ember.Deferred, {
   init: function() {
     this._super.apply(this, arguments);
     this._changesToSync = Ember.OrderedSet.create();
@@ -61,6 +61,7 @@ DS.ManyArray = DS.RecordArray.extend({
     if (this.loadingRecordsCount === 0) {
       set(this, 'isLoaded', true);
       this.trigger('didLoad');
+      this.resolve(this);
     }
   },
 

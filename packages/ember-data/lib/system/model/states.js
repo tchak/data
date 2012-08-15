@@ -412,6 +412,10 @@ var DirtyState = DS.State.extend({
     invokeLifecycleCallbacks: function(manager) {
       var record = get(manager, 'record');
       record.trigger('becameInvalid', record);
+
+      record.withTransaction(function(t) {
+        t.notify(record);
+      });
     }
   })
 });
@@ -518,6 +522,7 @@ var states = {
       exit: function(manager) {
         var record = get(manager, 'record');
         record.trigger('didLoad');
+        record.resolve(record);
       },
 
       // EVENTS
@@ -567,6 +572,10 @@ var states = {
           } else {
             record.trigger('didUpdate', record);
           }
+
+          record.withTransaction(function(t) {
+            t.notify(record);
+          });
         }
       }),
 
@@ -710,6 +719,10 @@ var states = {
         invokeLifecycleCallbacks: function(manager) {
           var record = get(manager, 'record');
           record.trigger('didDelete', record);
+
+          record.withTransaction(function(t) {
+            t.notify(record);
+          });
         }
       })
     }),
@@ -725,6 +738,10 @@ var states = {
       invokeLifecycleCallbacks: function(manager) {
         var record = get(manager, 'record');
         record.trigger('becameError', record);
+
+        record.withTransaction(function(t) {
+          t.notify(record);
+        });
       }
     })
   })

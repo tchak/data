@@ -580,7 +580,7 @@ DS.Store = Ember.Object.extend({
     var defaultTransaction = get(this, 'defaultTransaction');
     set(this, 'defaultTransaction', this.transaction());
 
-    defaultTransaction.commit();
+    return defaultTransaction.commit();
   },
 
   didSaveRecord: function(record, hash) {
