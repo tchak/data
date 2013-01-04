@@ -365,6 +365,8 @@ DS.Adapter = Ember.Object.extend(DS._Mappable, {
       return store.load(type, data, prematerialized);
     };
 
+    store.didUpdateRecord(type, id);
+
     get(this, 'serializer').extract(loader, payload, type);
   },
 

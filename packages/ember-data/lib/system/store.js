@@ -778,6 +778,13 @@ DS.Store = Ember.Object.extend(DS._Mappable, {
   },
 
   /**
+  */
+  didUpdateRecord: function(type, id) {
+    var record = this.findById(type, id);
+    set(record, 'isUpdating', false);
+  },
+
+  /**
     This method returns a filtered array that contains all of the known records
     for a given type.
 

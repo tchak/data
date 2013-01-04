@@ -18,6 +18,8 @@ DS.Model = Ember.Object.extend(Ember.Evented, LoadPromise, {
   isNew: retrieveFromCurrentState,
   isValid: retrieveFromCurrentState,
 
+  isUpdating: false,
+
   clientId: null,
   id: null,
   transaction: null,
@@ -117,6 +119,19 @@ DS.Model = Ember.Object.extend(Ember.Evented, LoadPromise, {
     Ember.assert("You can only unload a loaded, non-dirty record.", !get(this, 'isDirty'));
 
     this.send('unloadRecord');
+  },
+
+  update: function() {
+    Ember.assert("You can only update a loaded, non-dirty record.", !get(this, 'isDirty'));
+
+    var store = get(this, 'store'),
+        type = this.constructor,
+        adapter = store.adapterForType(type),
+        id = get(this, 'id');
+
+    set(this, 'isUpdating', true);
+
+    adapter.find(store, type, id);
   },
 
   clearRelationships: function() {
