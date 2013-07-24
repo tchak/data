@@ -540,6 +540,15 @@ DS.Model.reopenClass({
   filter: storeAlias('filter'),
 
   /**
+    See {{#crossLink "DS.Store/exists:method"}}`DS.Store.exists()`{{/crossLink}}.
+
+    @method exists
+    @param {String} id
+    @return {boolean}
+  */
+  exists: storeAlias('exists'),
+
+  /**
     See {{#crossLink "DS.Store/createRecord:method"}}`DS.Store.createRecord()`{{/crossLink}}.
 
     @method createRecord

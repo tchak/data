@@ -206,8 +206,8 @@ test("when a DS.Model updates its attributes, its changes affect its filtered Ar
 });
 
 test("can ask if record with a given id is loaded", function() {
-  equal(store.recordIsLoaded(Person, 1), true, 'should have person with id 1');
-  equal(store.recordIsLoaded(Person, 4), false, 'should not have person with id 2');
+  equal(store.exists(Person, 1), true, 'should have person with id 1');
+  equal(store.exists(Person, 4), false, 'should not have person with id 2');
 });
 
 test("a listener can be added to a record", function() {
