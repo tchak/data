@@ -982,7 +982,6 @@ DS.Store = Ember.Object.extend(DS._Mappable, {
 
     Ember.assert("No model was found for '" + key + "'", factory);
 
-    factory.store = this;
     factory.typeKey = key;
 
     return factory;
