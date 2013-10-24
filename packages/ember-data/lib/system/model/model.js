@@ -1,4 +1,5 @@
 require("ember-data/system/model/states");
+require("ember-data/system/model/errors");
 
 /**
   @module ember-data
@@ -275,10 +276,10 @@ DS.Model = Ember.Object.extend(Ember.Evented, {
     and values which are an array of error messages.
 
     ```javascript
-    record.get('errors'); // null
+    record.get('errors.length'); // 0
     record.set('foo', 'invalid value');
     record.save().then(null, function() {
-      record.get('errors'); // {foo: ['foo should be a number.']}
+      record.get('errors').get('foo'); // ['foo should be a number.']
     });
     ```
 
@@ -382,6 +383,7 @@ DS.Model = Ember.Object.extend(Ember.Evented, {
 
   init: function() {
     set(this, 'currentState', DS.RootState.empty);
+    set(this, 'errors', DS.Errors.create({record: this}));
     this._super();
     this._setup();
   },
@@ -792,12 +794,11 @@ DS.Model = Ember.Object.extend(Ember.Evented, {
       this._inFlightAttributes = {};
       set(this, 'isError', false);
     }
-    
+
     if (!get(this, 'isValid')) {
       this._inFlightAttributes = {};
-      this.send('becameValid');
-    } 
-  
+    }
+
     this.send('rolledBack');
 
     this.suspendRelationshipObservers(function() {
@@ -938,7 +939,15 @@ DS.Model = Ember.Object.extend(Ember.Evented, {
     @private
   */
   adapterDidInvalidate: function(errors) {
-    this.send('becameInvalid', errors);
+    var recordErrors = get(this, 'errors');
+    function addError(name) {
+      if (errors[name]) {
+        recordErrors.add(name, errors[name]);
+      }
+    }
+
+    this.eachAttribute(addError);
+    this.eachRelationship(addError);
   },
 
   /**
