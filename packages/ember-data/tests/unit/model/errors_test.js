@@ -2,7 +2,7 @@ var errors;
 
 module("unit/model/errors", {
   setup: function() {
-    errors = DS.Errors.create({ record: {} });
+    errors = DS.Errors.create();
   },
 
   teardown: function() {
@@ -31,9 +31,9 @@ function unexpectedSend(eventName) {
 
 test("add error", function() {
   expect(6);
-  errors.record.send = becameInvalid;
+  errors.trigger = becameInvalid;
   errors.add('firstName', 'error');
-  errors.record.send = unexpectedSend;
+  errors.trigger = unexpectedSend;
   ok(errors.has('firstName'), 'it has firstName errors');
   equal(errors.get('length'), 1, 'it has 1 error');
   errors.add('firstName', ['error1', 'error2']);
@@ -45,11 +45,11 @@ test("add error", function() {
 
 test("remove error", function() {
   expect(5);
-  errors.record.send = becameInvalid;
+  errors.trigger = becameInvalid;
   errors.add('firstName', 'error');
-  errors.record.send = becameValid;
+  errors.trigger = becameValid;
   errors.remove('firstName');
-  errors.record.send = unexpectedSend;
+  errors.trigger = unexpectedSend;
   ok(!errors.has('firstName'), 'it has no firstName errors');
   equal(errors.get('length'), 0, 'it has 0 error');
   ok(errors.get('isEmpty'), 'it is empty');
@@ -58,26 +58,26 @@ test("remove error", function() {
 
 test("remove same errors from different attributes", function() {
   expect(5);
-  errors.record.send = becameInvalid;
+  errors.trigger = becameInvalid;
   errors.add('firstName', 'error');
   errors.add('lastName', 'error');
-  errors.record.send = unexpectedSend;
+  errors.trigger = unexpectedSend;
   equal(errors.get('length'), 2, 'it has 2 error');
   errors.remove('firstName');
   equal(errors.get('length'), 1, 'it has 1 error');
-  errors.record.send = becameValid;
+  errors.trigger = becameValid;
   errors.remove('lastName');
   ok(errors.get('isEmpty'), 'it is empty');
 });
 
 test("clear errors", function() {
   expect(5);
-  errors.record.send = becameInvalid;
+  errors.trigger = becameInvalid;
   errors.add('firstName', ['error', 'error1']);
   equal(errors.get('length'), 2, 'it has 2 errors');
-  errors.record.send = becameValid;
+  errors.trigger = becameValid;
   errors.clear();
-  errors.record.send = unexpectedSend;
+  errors.trigger = unexpectedSend;
   ok(!errors.has('firstName'), 'it has no firstName errors');
   equal(errors.get('length'), 0, 'it has 0 error');
   errors.clear();

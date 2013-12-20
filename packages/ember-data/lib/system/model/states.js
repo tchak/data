@@ -336,7 +336,7 @@ var DirtyState = {
     },
 
     didSetProperty: function(record, context) {
-      get(record, 'errors').remove(context.name);
+      record.removeValidationError(context.name);
 
       didSetProperty(record, context);
     },
@@ -344,7 +344,7 @@ var DirtyState = {
     becomeDirty: Ember.K,
 
     rolledBack: function(record) {
-      get(record, 'errors').clear();
+      record.clearValidationErrors();
     },
 
     becameValid: function(record) {

@@ -383,7 +383,10 @@ DS.Model = Ember.Object.extend(Ember.Evented, {
 
   init: function() {
     set(this, 'currentState', DS.RootState.empty);
-    set(this, 'errors', DS.Errors.create({record: this}));
+
+    var errors = DS.Errors.create();
+    this.onValidationErrorEvents(errors);
+    set(this, 'errors', errors);
     this._super();
     this._setup();
   },
@@ -934,20 +937,46 @@ DS.Model = Ember.Object.extend(Ember.Evented, {
     this.updateRecordArraysLater();
   },
 
-  /**
-    @method adapterDidInvalidate
-    @private
-  */
-  adapterDidInvalidate: function(errors) {
-    var recordErrors = get(this, 'errors');
+  addValidationErrors: function(errors) {
+    var record = this;
+
     function addError(name) {
       if (errors[name]) {
-        recordErrors.add(name, errors[name]);
+        record.addValidationError(name, errors[name]);
       }
     }
 
     this.eachAttribute(addError);
     this.eachRelationship(addError);
+  },
+
+  addValidationError: function(name, errors) {
+    get(this, 'errors').add(name, errors);
+  },
+
+  removeValidationError: function(name) {
+    get(this, 'errors').remove(name);
+  },
+
+  clearValidationErrors: function() {
+    get(this, 'errors').clear();
+  },
+
+  onValidationErrorEvents: function(errors) {
+    errors.on('becameInvalid', this, function() {
+      this.send('becameInvalid');
+    });
+    errors.on('becameValid', this, function() {
+      this.send('becameValid');
+    });
+  },
+
+  /**
+    @method adapterDidInvalidate
+    @private
+  */
+  adapterDidInvalidate: function(errors) {
+    this.addValidationErrors(errors);
   },
 
   /**

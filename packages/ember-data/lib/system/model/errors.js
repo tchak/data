@@ -11,8 +11,9 @@ var get = Ember.get, set = Ember.set, isEmpty = Ember.isEmpty;
   @namespace DS
   @extends Ember.Object
   @uses Ember.Enumerable
+  @uses Ember.Evented
  */
-DS.Errors = Ember.Object.extend(Ember.Enumerable, {
+DS.Errors = Ember.Object.extend(Ember.Enumerable, Ember.Evented, {
   /**
     @property errorsByAttributeName
     @type {Ember.MapWithDefault}
@@ -23,13 +24,6 @@ DS.Errors = Ember.Object.extend(Ember.Enumerable, {
       defaultValue: function() { return Ember.A(); }
     });
   }),
-
-  /**
-    @property record
-    @type {DS.Model}
-    @private
-  */
-  record: null,
 
   /**
     @property content
@@ -94,7 +88,7 @@ DS.Errors = Ember.Object.extend(Ember.Enumerable, {
     this.notifyPropertyChange(name);
 
     if (wasEmpty && !get(this, 'isEmpty')) {
-      get(this, 'record').send('becameInvalid');
+      this.trigger('becameInvalid');
     }
   },
 
@@ -120,7 +114,7 @@ DS.Errors = Ember.Object.extend(Ember.Enumerable, {
     this.notifyPropertyChange(name);
 
     if (get(this, 'isEmpty')) {
-      get(this, 'record').send('becameValid');
+      this.trigger('becameValid');
     }
   },
 
@@ -136,7 +130,7 @@ DS.Errors = Ember.Object.extend(Ember.Enumerable, {
     this.notifyPropertyChange('errorsByAttributeName');
     get(this, 'content').clear();
 
-    get(this, 'record').send('becameValid');
+    this.trigger('becameValid');
   },
 
   /**
