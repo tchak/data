@@ -336,7 +336,7 @@ var DirtyState = {
     },
 
     didSetProperty: function(record, context) {
-      get(record, 'errors').remove(context.name);
+      get(record, 'errors').remove(context.name, 'adapter');
 
       didSetProperty(record, context);
     },

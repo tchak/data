@@ -856,9 +856,9 @@ DS.Store = Ember.Object.extend({
     @param {DS.Model} record
     @param {Resolver} resolver
   */
-  scheduleSave: function(record, resolver) {
+  scheduleSave: function(record, resolver, options) {
     record.adapterWillCommit();
-    this._pendingSave.push([record, resolver]);
+    this._pendingSave.push([record, resolver, options]);
     once(this, 'flushPendingSave');
   },
 
@@ -874,7 +874,7 @@ DS.Store = Ember.Object.extend({
     this._pendingSave = [];
 
     forEach(pending, function(tuple) {
-      var record = tuple[0], resolver = tuple[1],
+      var record = tuple[0], resolver = tuple[1], options = tuple[2],
           adapter = this.adapterFor(record.constructor),
           operation;
 
@@ -886,7 +886,7 @@ DS.Store = Ember.Object.extend({
         operation = 'updateRecord';
       }
 
-      resolver.resolve(_commit(adapter, this, operation, record));
+      resolver.resolve(_commit(adapter, this, operation, record, options));
     }, this);
   },
 
@@ -1365,6 +1365,11 @@ DS.Store = Ember.Object.extend({
     var adapter = this.adapterFor(type);
 
     return serializerFor(this.container, type.typeKey, adapter && adapter.defaultSerializer);
+  },
+
+  validatorFor: function(name, options) {
+    var validator = this.container.lookupFactory('validator:' + name);
+    return validator.create(options);
   }
 });
 
@@ -1563,7 +1568,19 @@ function _findQuery(adapter, store, type, query, recordArray) {
   }, null, "DS: Extract payload of findQuery " + type);
 }
 
-function _commit(adapter, store, operation, record) {
+function _commit(adapter, store, operation, record, options) {
+  if (options && options.validate === false) {
+    return _save(adapter, store, operation, record);
+  } else {
+    return record.validate(options).then(function() {
+      return _save(adapter, store, operation, record);
+    }, function(reason) {
+      store.recordWasInvalid(record, reason.errors);
+    });
+  }
+}
+
+function _save(adapter, store, operation, record) {
   var type = record.constructor,
       promise = adapter[operation](store, type, record),
       serializer = serializerForAdapter(adapter, type);

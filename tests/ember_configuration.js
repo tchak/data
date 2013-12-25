@@ -167,6 +167,7 @@
 
     DS.Model.reopen({
       save: syncForTest(),
+      validate: syncForTest(),
       reload: syncForTest(),
       deleteRecord: syncForTest(),
       dataDidChange: Ember.observer(syncForTest(), 'data'),
