@@ -1,5 +1,5 @@
 import {RESTAdapter} from "../../../ember-data/lib/adapters";
-import {InvalidError} from "../../../ember-data/lib/system/adapter";
+import {AdapterError, InvalidError} from "../../../ember-data/lib/system/adapter";
 import {pluralize} from "../../../ember-inflector/lib/main";
 import ActiveModelSerializer from "./active_model_serializer";
 import EmbeddedRecordsMixin from "./embedded_records_mixin";
@@ -100,22 +100,12 @@ var ActiveModelAdapter = RESTAdapter.extend({
   */
   ajaxError: function(jqXHR) {
     var error = this._super(jqXHR);
+    var response = Ember.$.parseJSON(jqXHR.responseText);
 
     if (jqXHR && jqXHR.status === 422) {
-      var response = Ember.$.parseJSON(jqXHR.responseText),
-          errors = {};
-
-      if (response.errors !== undefined) {
-        var jsonErrors = response.errors;
-
-        forEach(Ember.keys(jsonErrors), function(key) {
-          errors[Ember.String.camelize(key)] = jsonErrors[key];
-        });
-      }
-
-      return new InvalidError(errors);
+      return new InvalidError(response.errors);
     } else {
-      return error;
+      return new AdapterError(response.error);
     }
   }
 });

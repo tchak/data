@@ -974,8 +974,8 @@ Store = Ember.Object.extend({
     @private
     @param {DS.Model} record
   */
-  recordWasError: function(record) {
-    record.adapterDidError();
+  recordWasError: function(record, error) {
+    record.adapterDidError(error);
   },
 
   /**
@@ -1690,9 +1690,11 @@ function _commit(adapter, store, operation, record) {
     return record;
   }, function(reason) {
     if (reason instanceof DS.InvalidError) {
+      reason.errors = serializer.extractValidationErrors(reason);
       store.recordWasInvalid(record, reason.errors);
     } else {
-      store.recordWasError(record, reason);
+      reason.message = serializer.extractError(reason);
+      store.recordWasError(record, reason.message);
     }
 
     throw reason;

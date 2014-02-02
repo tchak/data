@@ -7,6 +7,15 @@ var map = Ember.ArrayPolyfills.map;
 
 var errorProps = ['description', 'fileName', 'lineNumber', 'message', 'name', 'number', 'stack'];
 
+var AdapterError = function(message) {
+  var tmp = Error.prototype.constructor.call(this, "The backend rejected the commit because of an error: " + message);
+
+  for (var i=0, l=errorProps.length; i<l; i++) {
+    this[errorProps[i]] = tmp[errorProps[i]];
+  }
+};
+AdapterError.prototype = Ember.create(Error.prototype);
+
 /**
   A `DS.InvalidError` is used by an adapter to signal the external API
   was unable to process a request because the content was not
@@ -429,5 +438,5 @@ var Adapter = Ember.Object.extend({
   }
 });
 
-export {InvalidError, Adapter};
+export {AdapterError, InvalidError, Adapter};
 export default Adapter;

@@ -205,6 +205,37 @@ var ActiveModelSerializer = RESTSerializer.extend({
         }
       }, this);
     }
+  },
+
+  extractValidationErrors: function(type, reason) {
+    var jsonErrors = reason.errors;
+    var errors = {};
+    var key;
+
+    function addAttributeError(name) {
+      key = this.keyForAttribute(name);
+      if (jsonErrors[key]) {
+        errors[name] = jsonErrors[key];
+      }
+    }
+
+    function addRelationshipError(name, meta) {
+      key = this.keyForRelationship(name, meta.kind);
+      if (jsonErrors[key]) {
+        errors[name] = jsonErrors[key];
+      }
+    }
+
+    type.eachAttribute(addAttributeError);
+    type.eachRelationship(addRelationshipError);
+
+    return errors;
+  },
+
+  extractError: function(type, reason) {
+    var response = Ember.$.parseJSON(reason.responseText);
+
+    return response && response.error;
   }
 });
 
