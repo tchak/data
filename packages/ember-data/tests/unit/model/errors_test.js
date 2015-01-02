@@ -61,8 +61,7 @@ test("get error", function() {
     { attribute: 'lastName', message: 'error3' }
   ]);
   deepEqual(errors.get('firstName'), [
-    { attribute: 'firstName', message: 'error' },
-    { attribute: 'firstName', message: 'error2' }
+    'error', 'error2'
   ]);
   deepEqual(errors.get('messages'), ['error', 'error2', 'error3']);
 });

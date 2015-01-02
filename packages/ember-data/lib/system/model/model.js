@@ -5,6 +5,10 @@ import merge from "ember-data/system/merge";
 import JSONSerializer from "ember-data/serializers/json_serializer";
 import createRelationshipFor from "ember-data/system/relationships/state/create";
 
+import {
+  MapWithDefault
+} from "ember-data/system/map";
+
 /**
   @module ember-data
 */
@@ -327,15 +331,37 @@ var Model = Ember.Object.extend(Ember.Evented, {
     @type {DS.Errors}
   */
   errors: Ember.computed(function() {
-    var errors = Errors.create();
+    var errors = MapWithDefault.create({
+      defaultValue: function() {
+        return Errors.create();
+      }
+    });
 
-    errors.registerHandlers(this, function() {
+    var adapterErrors = errors.get('adapter');
+
+    adapterErrors.registerHandlers(this, function() {
       this.send('becameInvalid');
     }, function() {
       this.send('becameValid');
     });
 
-    return errors;
+    return Ember.Object.create({
+      add: function(attribute, messages, source) {
+        adapterErrors.add(attribute, messages, source);
+      },
+      remove: function(attribute, source) {
+        adapterErrors.remove(attribute, source);
+      },
+      has: function(attribute) {
+        return adapterErrors.has(attribute);
+      },
+      clear: function(source) {
+        adapterErrors.clear(source);
+      },
+      unknownProperty: function(attribute) {
+        return errors.get(attribute);
+      }
+    });
   }).readOnly(),
 
   /**
@@ -1036,14 +1062,11 @@ var Model = Ember.Object.extend(Ember.Evented, {
   */
   adapterDidInvalidate: function(errors) {
     var recordErrors = get(this, 'errors');
-    function addError(name) {
-      if (errors[name]) {
-        recordErrors.add(name, errors[name]);
-      }
-    }
 
-    this.eachAttribute(addError);
-    this.eachRelationship(addError);
+    Ember.keys(errors).forEach(function(name) {
+      recordErrors.add(name, errors[name]);
+    });
+
     this._saveWasRejected();
   },
 
@@ -1051,7 +1074,7 @@ var Model = Ember.Object.extend(Ember.Evented, {
     @method adapterDidError
     @private
   */
-  adapterDidError: function() {
+  adapterDidError: function(record, reason) {
     this.send('becameError');
     set(this, 'isError', true);
     this._saveWasRejected();

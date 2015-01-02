@@ -1216,8 +1216,8 @@ Store = Ember.Object.extend({
     @private
     @param {DS.Model} record
   */
-  recordWasError: function(record) {
-    record.adapterDidError();
+  recordWasError: function(record, reason) {
+    record.adapterDidError(record, reason);
   },
 
   /**

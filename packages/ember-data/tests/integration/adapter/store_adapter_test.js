@@ -382,7 +382,7 @@ test("if a created record is marked as invalid by the server, it enters an error
   Ember.run(function() {
     yehuda.save().then(null, async(function(error) {
       equal(get(yehuda, 'isValid'), false, "the record is invalid");
-      ok(get(yehuda, 'errors.name'), "The errors.name property exists");
+      ok(get(yehuda, 'errors.adapter.name'), "The errors.name property exists");
 
       set(yehuda, 'updatedAt', true);
       equal(get(yehuda, 'isValid'), false, "the record is still invalid");
@@ -429,7 +429,7 @@ test("if a created record is marked as invalid by the server, you can attempt th
       ok(reason.message.match("The backend rejected the commit because it was invalid"), "It should fail due to being invalid");
       equal(get(yehuda, 'isValid'), false, "the record is invalid");
       equal(get(yehuda, 'isDirty'), true, "the record has outstanding changes");
-      ok(get(yehuda, 'errors.name'), "The errors.name property exists");
+      ok(get(yehuda, 'errors.adapter.name'), "The errors.name property exists");
       equal(get(yehuda, 'isNew'), true, "precond - record is still new");
       return yehuda.save();
     })).then(null, async(function(reason) {
@@ -437,7 +437,7 @@ test("if a created record is marked as invalid by the server, you can attempt th
       ok(reason.message.match("The backend rejected the commit because it was invalid"), "It should fail due to being invalid");
       equal(get(yehuda, 'isValid'), false, "the record is still invalid");
       equal(get(yehuda, 'isDirty'), true, "the record has outstanding changes");
-      ok(get(yehuda, 'errors.name'), "The errors.name property exists");
+      ok(get(yehuda, 'errors.adapter.name'), "The errors.name property exists");
       equal(get(yehuda, 'isNew'), true, "precond - record is still new");
       set(yehuda, 'name', 'Brohuda Brokatz');
       return yehuda.save();
@@ -445,7 +445,7 @@ test("if a created record is marked as invalid by the server, you can attempt th
       equal(saveCount, 3, "The record has been saved thrice");
       equal(get(yehuda, 'isValid'), true, "record is valid");
       equal(get(yehuda, 'isDirty'), false, "record is not dirty");
-      equal(get(yehuda, 'errors.isEmpty'), true, "record has no errors");
+      equal(get(yehuda, 'errors.adapter.isEmpty'), true, "record has no errors");
     }));
   });
 });
@@ -554,7 +554,7 @@ test("if an updated record is marked as invalid by the server, you can attempt t
       equal(saveCount, 3, "The record has been saved thrice");
       equal(get(yehuda, 'isValid'), true, "record is valid");
       equal(get(yehuda, 'isDirty'), false, "record is not dirty");
-      equal(get(yehuda, 'errors.isEmpty'), true, "record has no errors");
+      equal(get(yehuda, 'errors.adapter.isEmpty'), true, "record has no errors");
     }));
   });
 });
