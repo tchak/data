@@ -358,15 +358,15 @@ var Model = Ember.Object.extend(Ember.Evented, {
     @type {DS.Errors}
   */
   errors: Ember.computed(function() {
-    var errors = Errors.create();
-
-    errors.registerHandlers(this, function() {
-      this.send('becameInvalid');
-    }, function() {
-      this.send('becameValid');
+    var model = this;
+    return Errors.create({
+      becameInvalid: function() {
+        model.send('becameInvalid');
+      },
+      becameValid: function() {
+        model.send('becameValid');
+      }
     });
-
-    return errors;
   }).readOnly(),
 
   /**
@@ -1083,13 +1083,8 @@ var Model = Ember.Object.extend(Ember.Evented, {
     @private
   */
   adapterDidInvalidate: function(errors) {
-    var recordErrors = get(this, 'errors');
-    for (var key in errors) {
-      if (!errors.hasOwnProperty(key)) {
-        continue;
-      }
-      recordErrors.add(key, errors[key]);
-    }
+    get(this, 'errors').add(errors);
+
     this._saveWasRejected();
   },
 
@@ -1097,9 +1092,12 @@ var Model = Ember.Object.extend(Ember.Evented, {
     @method adapterDidError
     @private
   */
-  adapterDidError: function() {
+  adapterDidError: function(errors) {
+    get(this, 'errors').add(errors);
+
     this.send('becameError');
     set(this, 'isError', true);
+
     this._saveWasRejected();
   },
 

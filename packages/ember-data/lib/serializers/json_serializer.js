@@ -200,15 +200,25 @@ export default Serializer.extend({
     var payloadKey;
 
     if (this.keyForAttribute) {
-      type.eachAttribute(function(key) {
-        payloadKey = this.keyForAttribute(key);
-        if (key === payloadKey) { return; }
+      type.eachAttribute(function(attr) {
+        payloadKey = this.keyForAttribute(attr);
+        if (attr === payloadKey) { return; }
         if (!hash.hasOwnProperty(payloadKey)) { return; }
 
         hash[key] = hash[payloadKey];
         delete hash[payloadKey];
       }, this);
     }
+  },
+
+  normalizeAttribute: function(type, key) {
+    if (this.keyForAttribute) {
+      return get(type, 'attributes').find(function(attr) {
+        return this.keyForAttribute(attr) === key;
+      }, this);
+    }
+
+    return key;
   },
 
   /**
@@ -269,6 +279,7 @@ export default Serializer.extend({
     @private
   */
   normalizeErrors: function(type, hash) {
+
     this.normalizeId(hash);
     this.normalizeAttributes(type, hash);
     this.normalizeRelationships(type, hash);
@@ -1014,12 +1025,12 @@ export default Serializer.extend({
     @param {String or Number} id
     @return {Object} json The deserialized errors
   */
-  extractErrors: function(store, type, payload, id) {
-    if (payload && typeof payload === 'object' && payload.errors) {
-      payload = payload.errors;
-      this.normalizeErrors(type, payload);
-    }
-    return payload;
+  extractErrors: function(store, type, reason) {
+    reason.errors.forEach(function(error) {
+      error.attributes = error.attributes.map(function(key) {
+        return this.normalizeAttribute(type, key);
+      });
+    }, this);
   },
 
   /**

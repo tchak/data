@@ -1279,8 +1279,8 @@ Store = Ember.Object.extend({
     @param {DS.Model} record
     @param {Object} errors
   */
-  recordWasInvalid: function(record, errors) {
-    record.adapterDidInvalidate(errors);
+  recordWasInvalid: function(record, reason) {
+    record.adapterDidInvalidate(reason.errors);
   },
 
   /**
@@ -1291,9 +1291,10 @@ Store = Ember.Object.extend({
     @method recordWasError
     @private
     @param {DS.Model} record
+    @param {Error} error
   */
-  recordWasError: function(record) {
-    record.adapterDidError();
+  recordWasError: function(record, reason) {
+    record.adapterDidError(reason.errors);
   },
 
   /**
@@ -1943,10 +1944,14 @@ function _commit(adapter, store, operation, record) {
 
     return record;
   }, function(reason) {
-    if (reason instanceof InvalidError) {
-      var errors = serializer.extractErrors(store, type, reason.errors, get(record, 'id'));
-      store.recordWasInvalid(record, errors);
-      reason = new InvalidError(errors);
+    var isValidationError = reason.errors.any(function(error) {
+      return error instanceof ValidationError;
+    });
+
+    serializer.extractErrors(store, type, reason);
+
+    if (isValidationError) {
+      store.recordWasInvalid(record, reason);
     } else {
       store.recordWasError(record, reason);
     }

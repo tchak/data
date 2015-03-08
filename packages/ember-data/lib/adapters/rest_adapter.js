@@ -3,8 +3,7 @@
 */
 
 import {
-  Adapter,
-  InvalidError
+  Adapter
 } from "ember-data/system/adapter";
 import {
   MapWithDefault
@@ -810,21 +809,46 @@ export default Adapter.extend({
     @param  {Object} responseText
     @return {Object} jqXHR
   */
-  ajaxError: function(jqXHR, responseText, errorThrown) {
-    var isObject = jqXHR !== null && typeof jqXHR === 'object';
+  ajaxError: function(status, textStatus, responseText, errorThrown) {
+    //var error = this._super.apply(this, arguments);
+    var errors = this.parseErrors(responseText);
 
-    if (isObject) {
-      jqXHR.then = null;
-      if (!jqXHR.errorThrown) {
-        if (typeof errorThrown === 'string') {
-          jqXHR.errorThrown = new Error(errorThrown);
-        } else {
-          jqXHR.errorThrown = errorThrown;
-        }
-      }
+    if (typeof errorThrown === 'string') {
+      errorThrown = new BaseError({ title: errorThrown });
+    } else {
+      errorThrown = errorThrown;
     }
 
-    return jqXHR;
+    if (errorThrown) {
+      errors.push(errorThrown);
+    }
+
+    if (textStatus === 'timeout') {
+      errors.push(new TimeoutError());
+    } else if (Em.isEmpty(errors)) {
+      errors.push(new BaseError({
+        status: status
+      }));
+    } else {
+      errors.forEach(error => error.status = status);
+      errors = this.generateErrorsWithStatus(status, errors);
+    }
+
+    this.rejectWithErrors(errors);
+  },
+
+  parseErrors: function(responseText) {
+    var errors = [];
+
+    try {
+      errors = Ember.$.parseJSON(responseText).errors;
+    } catch (e) {}
+
+    return errors;
+  },
+
+  generateErrorsWithStatus: function(status, errors) {
+    return this.adapterError(errors);
   },
 
   /**
@@ -893,7 +917,11 @@ export default Adapter.extend({
       };
 
       hash.error = function(jqXHR, textStatus, errorThrown) {
-        Ember.run(null, reject, adapter.ajaxError(jqXHR, jqXHR.responseText, errorThrown));
+        Ember.run(null, reject, adapter.ajaxError(
+          jqXHR.status,
+          jqXHR.responseText,
+          errorThrown
+        ));
       };
 
       Ember.$.ajax(hash);

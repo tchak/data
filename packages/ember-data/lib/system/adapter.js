@@ -3,71 +3,7 @@
 */
 
 var get = Ember.get;
-
-var errorProps = [
-  'description',
-  'fileName',
-  'lineNumber',
-  'message',
-  'name',
-  'number',
-  'stack'
-];
-
-/**
-  A `DS.InvalidError` is used by an adapter to signal the external API
-  was unable to process a request because the content was not
-  semantically correct or meaningful per the API. Usually this means a
-  record failed some form of server side validation. When a promise
-  from an adapter is rejected with a `DS.InvalidError` the record will
-  transition to the `invalid` state and the errors will be set to the
-  `errors` property on the record.
-
-  This function should return the entire payload as received from the
-  server.  Error object extraction and normalization of model errors
-  should be performed by `extractErrors` on the serializer.
-
-  Example
-
-  ```javascript
-  App.ApplicationAdapter = DS.RESTAdapter.extend({
-    ajaxError: function(jqXHR) {
-      var error = this._super(jqXHR);
-
-      if (jqXHR && jqXHR.status === 422) {
-        var jsonErrors = Ember.$.parseJSON(jqXHR.responseText);
-        return new DS.InvalidError(jsonErrors);
-      } else {
-        return error;
-      }
-    }
-  });
-  ```
-
-  The `DS.InvalidError` must be constructed with a single object whose
-  keys are the invalid model properties, and whose values contain
-  arrays of the corresponding error messages. For example:
-
-  ```javascript
-  return new DS.InvalidError({
-    length: ['Must be less than 15'],
-    name: ['Must not be blank']
-  });
-  ```
-
-  @class InvalidError
-  @namespace DS
-*/
-function InvalidError(errors) {
-  var tmp = Error.prototype.constructor.call(this, "The backend rejected the commit because it was invalid: " + Ember.inspect(errors));
-  this.errors = errors;
-
-  for (var i=0, l=errorProps.length; i<l; i++) {
-    this[errorProps[i]] = tmp[errorProps[i]];
-  }
-}
-
-InvalidError.prototype = Ember.create(Error.prototype);
+var map = Ember.EnumerableUtils.map;
 
 /**
   An adapter is an object that receives requests from a store and
@@ -459,6 +395,18 @@ var Adapter = Ember.Object.extend({
   */
   groupRecordsForFindMany: function (store, records) {
     return [records];
+  },
+
+  adapterErrors: function(errors) {
+    return map(errors, function(error) { return new AdapterError(error); });
+  },
+
+  adapterValidationErrors: function(error) {
+    return map(errors, function(error) { return new AdapterValidationError(error); });
+  },
+
+  rejectWithErrors: function(errors) {
+    return new Errors(errors);
   }
 });
 

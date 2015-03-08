@@ -1,10 +1,52 @@
 var get = Ember.get;
 var isEmpty = Ember.isEmpty;
 var map = Ember.EnumerableUtils.map;
+var makeArray = Ember.makeArray;
+var emberA = Ember.A;
+var EmberArray = Ember.Array;
+var Evented = Ember.Evented;
+var tryInvoke = Ember.tryInvoke;
+var reduceComputed = Ember.reduceComputed;
+var mapBy = Ember.computed.mapBy;
 
 import {
   MapWithDefault
 } from "ember-data/system/map";
+
+function selectByAttribute(attribute) {
+  return function(error) {
+    return error.attribute === attribute;
+  };
+}
+
+function selectByType(type) {
+  return function(error) {
+    return error instanceof type;
+  };
+}
+
+function selectByTypeAndAttribute(type, attribute) {
+  return function(error) {
+    return (error instanceof type) && error.attribute === attribute;
+  };
+}
+
+function replaceWithContent(target, content, attributes) {
+  var amt = get(target, 'length'),
+      length = get(content, 'length');
+
+  if (amt !== length) {
+    target.arrayContentWillChange(0, amt, length);
+
+    get(target, 'content').setObjects(content);
+
+    for (var i = 0, lng = attributes.length; i < lng; i++) {
+      target.notifyPropertyChange(attributes[i]);
+    }
+
+    target.arrayContentDidChange(0, amt, length);
+  }
+}
 
 /**
 @module ember-data
@@ -57,14 +99,14 @@ import {
 
   ```handlebars
   <label>Username: {{input value=username}} </label>
-  {{#each error in model.errors.username}}
+  {{#each model.errors.username as |error|}}
     <div class="error">
       {{error.message}}
     </div>
   {{/each}}
 
   <label>Email: {{input value=email}} </label>
-  {{#each error in model.errors.email}}
+  {{#each model.errors.email as |error|}}
     <div class="error">
       {{error.message}}
     </div>
@@ -75,7 +117,7 @@ import {
   object to get an array of all the error strings.
 
   ```handlebars
-  {{#each message in model.errors.messages}}
+  {{#each model.errors.messages as |message|}}
     <div class="error">
       {{message}}
     </div>
@@ -88,46 +130,58 @@ import {
   @uses Ember.Enumerable
   @uses Ember.Evented
  */
-export default Ember.Object.extend(Ember.Enumerable, Ember.Evented, {
+export default Ember.Object.extend(EmberArray, Evented, {
   /**
-    Register with target handler
+    Override the default event firing from Ember.Evented to
+    also call methods with the given name.
 
-    @method registerHandlers
-    @param {Object} target
-    @param {Function} becameInvalid
-    @param {Function} becameValid
+    @method trigger
+    @private
+    @param {String} name
   */
-  registerHandlers: function(target, becameInvalid, becameValid) {
-    this.on('becameInvalid', target, becameInvalid);
-    this.on('becameValid', target, becameValid);
+  trigger: function(name) {
+    tryInvoke(this, name);
+    this._super.apply(this, arguments);
   },
 
   /**
-    @property errorsByAttributeName
+    @property messagesByAttributeName
     @type {Ember.MapWithDefault}
     @private
   */
-  errorsByAttributeName: Ember.reduceComputed("content", {
+  messagesByAttributeName: reduceComputed("sortedContent", {
     initialValue: function() {
       return MapWithDefault.create({
         defaultValue: function() {
-          return Ember.A();
+          return emberA();
         }
       });
     },
 
     addedItem: function(errors, error) {
-      errors.get(error.attribute).pushObject(error);
+      var attribute = error.attribute || 'base';
+
+      errors.get(attribute).pushObject(error.message);
 
       return errors;
     },
 
     removedItem: function(errors, error) {
-      errors.get(error.attribute).removeObject(error);
+      var attribute = error.attribute || 'base';
+
+      errors.get(attribute).removeObject(error.message);
 
       return errors;
     }
   }),
+
+  /**
+    @method messagesFor
+    @private
+  */
+  messagesFor: function(attribute) {
+    return get(this, 'messagesByAttributeName').get(attribute);
+  },
 
   /**
     Returns errors for a given attribute
@@ -139,16 +193,32 @@ export default Ember.Object.extend(Ember.Enumerable, Ember.Evented, {
     });
     user.save().catch(function(){
       user.get('errors').errorsFor('email'); // returns:
-      // [{attribute: "email", message: "Doesn't look like a valid email."}]
+      // [{attribute: "email", message: "Doesn't look like a valid email.", source: 'ember-data:adapter'}]
     });
     ```
 
     @method errorsFor
     @param {String} attribute
+    @param {Errors} type
     @return {Array}
   */
-  errorsFor: function(attribute) {
-    return get(this, 'errorsByAttributeName').get(attribute);
+  errorsFor: function(attribute, type) {
+    var errors = get(this, 'content');
+
+    if (typeof attribute !== 'string') {
+      type = attribute;
+      attribute = undefined;
+    }
+
+    if (attribute) {
+      errors = emberA(errors).filter(selectByAttribute(attribute));
+    }
+
+    if (type) {
+      errors = emberA(errors).filter(selectByType(type));
+    }
+
+    return errors;
   },
 
   /**
@@ -166,7 +236,10 @@ export default Ember.Object.extend(Ember.Enumerable, Ember.Evented, {
     @property messages
     @type {Array}
   */
-  messages: Ember.computed.mapBy('content', 'message'),
+  messages: mapBy('sortedContent', 'message'),
+
+  sortContentBy: emberA(['attribute']),
+  sortedContent: Ember.computed.sort('content', 'sortContentBy'),
 
   /**
     @property content
@@ -174,25 +247,38 @@ export default Ember.Object.extend(Ember.Enumerable, Ember.Evented, {
     @private
   */
   content: Ember.computed(function() {
-    return Ember.A();
+    return emberA();
   }),
 
   /**
-    @method unknownProperty
+    @method objectAt
     @private
   */
-  unknownProperty: function(attribute) {
-    var errors = this.errorsFor(attribute);
-    if (isEmpty(errors)) { return null; }
-    return errors;
+  objectAt: function(idx) {
+    return get(this, 'sortedContent').objectAt(idx);
   },
 
   /**
-    @method nextObject
-    @private
+    Returns error messages for a given attribute
+
+    ```javascript
+    var user = store.createRecord('user', {
+      username: 'tomster',
+      email: 'invalidEmail'
+    });
+    user.save().catch(function(){
+      user.get('errors.adapter').get('email'); // ["Doesn't look like a valid email."]
+    });
+    ```
+
+    @method get
+    @param {String} attribute
+    @return {Array}
   */
-  nextObject: function(index, previousObject, context) {
-    return get(this, 'content').objectAt(index);
+  unknownProperty: function(attribute) {
+    var errors = this.messagesFor(attribute);
+    if (isEmpty(errors)) { return null; }
+    return errors;
   },
 
   /**
@@ -219,41 +305,43 @@ export default Ember.Object.extend(Ember.Enumerable, Ember.Evented, {
 
     ```javascript
     if (!user.get('username') {
-      user.get('errors').add('username', 'This field is required');
+      user.get('errors').add(new ValidationError({
+        attribute: 'password',
+        message: "Your password is incorrect"
+      }));
     }
+
     ```
 
+    {{#each model.errors as |error|}}
+      {{error.message}}
+      {{error.code}}
+    {{/each}}
+
     @method add
-    @param {String} attribute
-    @param {Array|String} messages
+    @param {Array<Error>} errors
   */
-  add: function(attribute, messages) {
-    var wasEmpty = get(this, 'isEmpty');
 
-    messages = this._findOrCreateMessages(attribute, messages);
-    get(this, 'content').addObjects(messages);
+  add: function(errors) {
+    errors = makeArray(errors);
+    errors = emberA(errors);
 
-    this.notifyPropertyChange(attribute);
-    this.enumerableContentDidChange();
+    var hasValidationErrors = this.hasValidationErrors();
 
-    if (wasEmpty && !get(this, 'isEmpty')) {
+    var idx = get(this, 'length');
+    this.arrayContentWillChange(idx, 0, errors.length);
+
+    get(this, 'content').pushObjects(errors);
+
+    errors.mapBy('attribute').compact().uniq().forEach(attribute => {
+      this.notifyPropertyChange(attribute);
+    });
+
+    this.arrayContentDidChange(idx, 0, errors.length);
+
+    if (!hasValidationErrors && this.hasValidationErrors()) {
       this.trigger('becameInvalid');
     }
-  },
-
-  /**
-    @method _findOrCreateMessages
-    @private
-  */
-  _findOrCreateMessages: function(attribute, messages) {
-    var errors = this.errorsFor(attribute);
-
-    return map(Ember.makeArray(messages), function(message) {
-      return errors.findBy('message', message) || {
-        attribute: attribute,
-        message: message
-      };
-    });
   },
 
   /**
@@ -283,17 +371,47 @@ export default Ember.Object.extend(Ember.Enumerable, Ember.Evented, {
 
     @method remove
     @param {String} attribute
+    @param {Error} type
   */
-  remove: function(attribute) {
+  remove: function(attribute, type) {
+    if (typeof attribute !== 'string') {
+      type = attribute;
+      attribute = undefined;
+    }
+
+    if (attribute && type) {
+      this.removeByTypeAndAttribute(type, attribute);
+    } else if (attribute) {
+      this.removeByAttribute(attribute);
+    } else if (type) {
+      this.removeByType(type);
+    }
+  },
+
+  removeByType: function(type) {
+    this.removeBy(selectByType(type));
+  },
+
+  removeByAttribute: function(attribute) {
+    this.removeBy(selectByAttribute(attribute));
+  },
+
+  removeByTypeAndAttribute: function(type, attribute) {
+    this.removeBy(selectByTypeAndAttribute(type, attribute));
+  },
+
+  removeBy: function(selector) {
     if (get(this, 'isEmpty')) { return; }
 
-    var content = get(this, 'content').rejectBy('attribute', attribute);
-    get(this, 'content').setObjects(content);
+    var hadAdapterErrors = this.hasValidationErrors();
+    var content = get(this, 'content');
 
-    this.notifyPropertyChange(attribute);
-    this.enumerableContentDidChange();
+    content = content.reject(selector);
+    attributes = emberA(content).mapBy('attribute').uniq();
 
-    if (get(this, 'isEmpty')) {
+    replaceWithContent(this, content, attributes);
+
+    if (hadAdapterErrors && !this.hasValidationErrors()) {
       this.trigger('becameValid');
     }
   },
@@ -316,14 +434,31 @@ export default Ember.Object.extend(Ember.Enumerable, Ember.Evented, {
     ```
 
     @method clear
+    @param {Error} type
   */
-  clear: function() {
+  clear: function(type) {
+    if (type) {
+      this.removeByType(type);
+    } else {
+      this._clear();
+    }
+  },
+
+  _clear: function() {
     if (get(this, 'isEmpty')) { return; }
 
-    get(this, 'content').clear();
-    this.enumerableContentDidChange();
+    var hadAdapterErrors = this.hasValidationErrors();
+    var amt = get(this, 'length');
 
-    this.trigger('becameValid');
+    this.arrayContentWillChange(0, amt, 0);
+
+    get(this, 'content').clear();
+
+    this.arrayContentDidChange(0, amt, 0);
+
+    if (hadAdapterErrors && !this.hasValidationErrors()) {
+      this.trigger('becameValid');
+    }
   },
 
   /**
@@ -344,9 +479,15 @@ export default Ember.Object.extend(Ember.Enumerable, Ember.Evented, {
 
     @method has
     @param {String} attribute
+    @param {Error} type
     @return {Boolean} true if there some errors on given attribute
   */
-  has: function(attribute) {
-    return !isEmpty(this.errorsFor(attribute));
+  has: function(attribute, type) {
+    var errors = this.errorsFor(attribute, type);
+    return !isEmpty(errors);
+  },
+
+  hasValidationErrors: function() {
+    return this.has(ValidationError);
   }
 });

@@ -1,5 +1,4 @@
 import {RESTAdapter} from "ember-data/adapters";
-import {InvalidError} from "ember-data/system/adapter";
 import {pluralize} from "ember-inflector";
 
 /**
@@ -122,7 +121,7 @@ var ActiveModelAdapter = RESTAdapter.extend({
   },
 
   /**
-    The ActiveModelAdapter overrides the `ajaxError` method
+    The ActiveModelAdapter overrides the `generateErrorsWithStatus` method
     to return a DS.InvalidError for all 422 Unprocessable Entity
     responses.
 
@@ -137,14 +136,22 @@ var ActiveModelAdapter = RESTAdapter.extend({
     @param {Object} jqXHR
     @return error
   */
-  ajaxError: function(jqXHR) {
-    var error = this._super.apply(this, arguments);
-
-    if (jqXHR && jqXHR.status === 422) {
-      return new InvalidError(Ember.$.parseJSON(jqXHR.responseText));
+  generateErrorsWithStatus: function(status, errors) {
+    if (status === 422) {
+      return this.adapterValidationErrors(errors);
     } else {
-      return error;
+      return this.adapterError(errors);
     }
+  },
+
+  parseErrors: function(responseText) {
+    var errors = [];
+
+    try {
+      errors = Ember.$.parseJSON(responseText).errors;
+    } catch (e) {}
+
+    return errors;
   }
 });
 
