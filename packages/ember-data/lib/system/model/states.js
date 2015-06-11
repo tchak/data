@@ -351,10 +351,6 @@ var DirtyState = {
 
     invokeLifecycleCallbacks: function(internalModel) {
       internalModel.triggerLater('becameInvalid', internalModel);
-    },
-
-    exit: function(internalModel) {
-      internalModel._inFlightAttributes = Ember.create(null);
     }
   }
 };

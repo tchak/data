@@ -264,11 +264,6 @@ InternalModel.prototype = {
     this.send('pushedData');
   },
 
-  flushChangedAttributes: function() {
-    this._inFlightAttributes = this._attributes;
-    this._attributes = Ember.create(null);
-  },
-
   /**
     @method adapterWillCommit
     @private
@@ -662,7 +657,7 @@ InternalModel.prototype = {
       }
     }
 
-    this._saveWasRejected();
+    this.flushInFlightAttributes();
   },
 
   /**
@@ -672,10 +667,23 @@ InternalModel.prototype = {
   adapterDidError: function(error) {
     this.send('becameError');
     this.didError(error);
-    this._saveWasRejected();
+    this.flushInFlightAttributes();
   },
 
-  _saveWasRejected: function() {
+  /**
+    @method flushChangedAttributes
+    @private
+  */
+  flushChangedAttributes: function() {
+    this._inFlightAttributes = this._attributes;
+    this._attributes = Ember.create(null);
+  },
+
+  /**
+    @method flushInFlightAttributes
+    @private
+  */
+  flushInFlightAttributes: function() {
     var keys = Ember.keys(this._inFlightAttributes);
     for (var i=0; i < keys.length; i++) {
       if (this._attributes[keys[i]] === undefined) {
