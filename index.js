@@ -8,6 +8,7 @@ const version = require('./lib/version');
 const { isInstrumentedBuild } = require('./lib/cli-flags');
 const BroccoliDebug = require('broccoli-debug');
 const calculateCacheKeyForTree = require('calculate-cache-key-for-tree');
+const VersionChecker = require('ember-cli-version-checker');
 
 function isProductionEnv() {
   let isProd = /production/.test(process.env.EMBER_ENV);
@@ -54,6 +55,19 @@ module.exports = {
 
   init() {
     this._super.init && this._super.init.apply(this, arguments);
+
+    let checker = new VersionChecker(this.parent);
+    let hasJQuery = checker.for('@ember/jquery').exists();
+    let hasEmberFetch = checker.for('ember-fetch').isAbove('6.0.0');
+    if (!hasJQuery && !hasEmberFetch) {
+      throw new Error(
+        'To use ember-data, you need either @ember/jquery or ember-fetch@>=6 ' +
+          'package. You may already have jquery in your app. In that case, ' +
+          'you will have to explicitely opt into it. More info here: ' +
+          'https://guides.emberjs.com/release/configuring-ember/optional-features/#toc_jquery-integration'
+      );
+    }
+
     this._prodLikeWarning();
     this.debugTree = BroccoliDebug.buildDebugCallback('ember-data');
     this.options = this.options || {};
